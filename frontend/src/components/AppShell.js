@@ -151,7 +151,7 @@ export function AppShell({ children, title }) {
       </div>
 
       {/* Mobile bottom tab bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-white/10 bg-[rgba(15,22,32,0.86)] backdrop-blur-md pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-[10000] flex items-stretch border-t border-white/10 bg-[rgba(15,22,32,0.92)] backdrop-blur-md pb-[env(safe-area-inset-bottom)] lg:hidden">
         {MOBILE_TABS.map((item) => (
           <NavLink
             key={item.to}

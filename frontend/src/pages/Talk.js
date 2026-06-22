@@ -31,6 +31,8 @@ export default function Talk() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const scrollRef = useRef(null);
   const startedRef = useRef(false);
+  const streamTokenRef = useRef(0);
+  const abortRef = useRef(null);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -57,18 +59,26 @@ export default function Talk() {
     setStreaming(true);
     setOrbState("thinking");
 
+    const myToken = ++streamTokenRef.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
     let firstDelta = true;
     await streamChat({
       message,
       sessionId,
+      signal: controller.signal,
       onEvent: (ev) => {
+        if (streamTokenRef.current !== myToken) return; // stale stream (new chat started)
         if (ev.type === "session") {
           setSessionId(ev.session_id);
         } else if (ev.type === "delta") {
           if (firstDelta) { setOrbState("speaking"); firstDelta = false; }
           setMessages((m) => {
+            if (m.length === 0) return m;
             const copy = [...m];
-            copy[copy.length - 1] = { role: "assistant", content: copy[copy.length - 1].content + ev.content };
+            const last = copy[copy.length - 1];
+            if (!last || last.role !== "assistant") return m;
+            copy[copy.length - 1] = { role: "assistant", content: last.content + ev.content };
             return copy;
           });
           scrollToBottom();
@@ -99,7 +109,15 @@ export default function Talk() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
+  const cancelStream = () => {
+    streamTokenRef.current++;
+    if (abortRef.current) { try { abortRef.current.abort(); } catch (e) { /* noop */ } abortRef.current = null; }
+    setStreaming(false);
+    setOrbState("idle");
+  };
+
   const newChat = () => {
+    cancelStream();
     setMessages([]);
     setSessionId(null);
     setHistoryOpen(false);
@@ -107,6 +125,7 @@ export default function Talk() {
   };
 
   const openSession = async (sid) => {
+    cancelStream();
     try {
       const { data } = await api.get(`/chat/sessions/${sid}/messages`);
       setMessages(data.map((m) => ({ role: m.role, content: m.content })));

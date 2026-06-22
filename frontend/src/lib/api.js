@@ -29,7 +29,7 @@ api.interceptors.response.use(
  * Authorization header, which EventSource cannot do).
  * onEvent receives parsed event objects: {type:'delta'|'session'|'actions'|'done'|'error', ...}
  */
-export async function streamChat({ message, sessionId, onEvent }) {
+export async function streamChat({ message, sessionId, onEvent, signal }) {
   const token = localStorage.getItem("kaelra_token");
   const res = await fetch(`${API}/chat/stream`, {
     method: "POST",
@@ -38,6 +38,7 @@ export async function streamChat({ message, sessionId, onEvent }) {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ message, session_id: sessionId || null }),
+    signal,
   });
   if (!res.ok || !res.body) {
     onEvent({ type: "error", message: "Kaelra could not respond right now." });
@@ -47,22 +48,28 @@ export async function streamChat({ message, sessionId, onEvent }) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const chunks = buffer.split("\n\n");
-    buffer = chunks.pop() || "";
-    for (const chunk of chunks) {
-      const line = chunk.trim();
-      if (!line.startsWith("data:")) continue;
-      const json = line.slice(5).trim();
-      if (!json) continue;
-      try {
-        onEvent(JSON.parse(json));
-      } catch (e) {
-        /* ignore partial */
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() || "";
+      for (const chunk of chunks) {
+        const line = chunk.trim();
+        if (!line.startsWith("data:")) continue;
+        const json = line.slice(5).trim();
+        if (!json) continue;
+        try {
+          onEvent(JSON.parse(json));
+        } catch (e) {
+          /* ignore partial */
+        }
       }
     }
+  } catch (e) {
+    if (e?.name === "AbortError") return; // stream cancelled by caller
+    onEvent({ type: "error", message: "Connection interrupted." });
+    onEvent({ type: "done" });
   }
 }
