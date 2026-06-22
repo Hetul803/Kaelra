@@ -36,7 +36,13 @@ def _client_config(redirect_uri: str) -> dict:
 
 
 def build_auth_url(redirect_uri: str, state: str) -> str:
-    flow = Flow.from_client_config(_client_config(redirect_uri), scopes=GOOGLE_SCOPES)
+    # Confidential web client (has client_secret) -> classic code flow, no PKCE.
+    # PKCE must be disabled because the auth URL and token exchange happen in two
+    # separate requests; an auto-generated code_verifier cannot survive between them
+    # (which otherwise causes "invalid_grant: Missing code verifier").
+    flow = Flow.from_client_config(
+        _client_config(redirect_uri), scopes=GOOGLE_SCOPES, autogenerate_code_verifier=False,
+    )
     flow.redirect_uri = redirect_uri
     url, _ = flow.authorization_url(
         access_type="offline",
@@ -48,7 +54,9 @@ def build_auth_url(redirect_uri: str, state: str) -> str:
 
 
 async def exchange_code(user_id: str, code: str, redirect_uri: str) -> dict:
-    flow = Flow.from_client_config(_client_config(redirect_uri), scopes=GOOGLE_SCOPES)
+    flow = Flow.from_client_config(
+        _client_config(redirect_uri), scopes=GOOGLE_SCOPES, autogenerate_code_verifier=False,
+    )
     flow.redirect_uri = redirect_uri
     flow.fetch_token(code=code)
     creds = flow.credentials

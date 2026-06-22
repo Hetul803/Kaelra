@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from .base import BaseConnector, ConnectorResult, at_time, fmt_time
+from utils import is_demo_user
 
 
 class MapsConnector(BaseConnector):
@@ -10,6 +11,8 @@ class MapsConnector(BaseConnector):
     name = "Maps / Commute"
 
     async def fetch(self, user_id: str, profile: dict) -> ConnectorResult:
+        if not await is_demo_user(user_id):
+            return ConnectorResult(provider=self.provider, connected=False, data={})
         commute_minutes = 29
         buffer_minutes = 0
         work_start = at_time(14, 0)

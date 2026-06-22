@@ -11,7 +11,7 @@ from fastapi import APIRouter, FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from config import CORS_ORIGINS, close_client
-from services.seed import seed_demo
+from services.seed import seed_demo, ensure_demo_alive
 
 from routes import auth as auth_routes
 from routes import today as today_routes
@@ -74,6 +74,7 @@ app.add_middleware(
 async def on_startup():
     try:
         demo_id = await seed_demo()
+        await ensure_demo_alive()
         logger.info("Demo operator ready (user_id=%s)", demo_id)
     except Exception as e:  # noqa: BLE001
         logger.exception("Demo seeding failed: %s", e)

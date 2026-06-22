@@ -9,7 +9,7 @@ Kaelra recommends the best resume from indexed files, drafts recruiter replies
 from __future__ import annotations
 
 from config import get_db
-from utils import new_id, now_iso, clean_docs, clean_doc
+from utils import new_id, now_iso, clean_docs, clean_doc, is_demo_user
 from services.audit import log_event
 from services.actions import create_actions
 from services import kaelra
@@ -44,6 +44,8 @@ async def ensure_seed(user_id: str, profile: dict):
     db = get_db()
     if await db.jobs.count_documents({"user_id": user_id}) > 0:
         return
+    if not await is_demo_user(user_id):
+        return  # real users: matches arrive from real sources, not mock data
     matches = await _connector.matches(profile)
     docs = [{"id": new_id(), "user_id": user_id, "status": "matched", "created_at": now_iso(),
              "updated_at": now_iso(), **m} for m in matches]

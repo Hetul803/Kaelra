@@ -1,6 +1,7 @@
 """Mock News connector. Returns a briefing tuned to the user's interests."""
 
 from .base import BaseConnector, ConnectorResult
+from utils import is_demo_user
 
 _ARTICLES = {
     "AI": [
@@ -26,6 +27,9 @@ class NewsConnector(BaseConnector):
     name = "News Briefing"
 
     async def fetch(self, user_id: str, profile: dict) -> ConnectorResult:
+        if not await is_demo_user(user_id):
+            return ConnectorResult(provider=self.provider, connected=False,
+                                   data={"articles": [], "interests": profile.get("interests", [])})
         interests = profile.get("interests") or ["AI", "startups", "backend engineering"]
         articles = []
         for interest in interests:

@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from .base import BaseConnector, ConnectorResult, at_time, fmt_time
+from utils import is_demo_user
 
 
 class CalendarConnector(BaseConnector):
@@ -10,7 +11,7 @@ class CalendarConnector(BaseConnector):
     name = "Google Calendar"
 
     async def fetch(self, user_id: str, profile: dict) -> ConnectorResult:
-        # Real Google data when connected, else realistic demo data.
+        # Real Google data when connected, else realistic demo data (demo user only).
         try:
             from services.google_api import calendar_today
             real = await calendar_today(user_id)
@@ -18,6 +19,9 @@ class CalendarConnector(BaseConnector):
                 return ConnectorResult(provider=self.provider, connected=True, data=real)
         except Exception:
             pass
+        if not await is_demo_user(user_id):
+            return ConnectorResult(provider=self.provider, connected=False,
+                                   data={"events": [], "primary_event": None})
         # Deterministic, realistic "today" schedule for the demo operator.
         work_start = at_time(14, 0)
         work_end = at_time(22, 0)

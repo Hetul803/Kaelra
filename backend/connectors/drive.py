@@ -1,6 +1,7 @@
 """Mock Google Drive connector."""
 
 from .base import BaseConnector, ConnectorResult
+from utils import is_demo_user
 
 
 class DriveConnector(BaseConnector):
@@ -15,6 +16,9 @@ class DriveConnector(BaseConnector):
                 return ConnectorResult(provider=self.provider, connected=True, data=real)
         except Exception:
             pass
+        if not await is_demo_user(user_id):
+            return ConnectorResult(provider=self.provider, connected=False,
+                                   data={"files": [], "needs_attention": []})
         files = [
             {
                 "id": "dr_syllabus",

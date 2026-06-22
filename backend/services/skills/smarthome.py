@@ -8,7 +8,7 @@ pending action instead of acting immediately.
 from __future__ import annotations
 
 from config import get_db
-from utils import new_id, now_iso, clean_docs, clean_doc
+from utils import new_id, now_iso, clean_docs, clean_doc, is_demo_user
 from services.audit import log_event
 from services.actions import create_actions
 
@@ -19,6 +19,8 @@ async def ensure_seed(user_id: str):
     db = get_db()
     if await db.home_devices.count_documents({"user_id": user_id}) > 0:
         return
+    if not await is_demo_user(user_id):
+        return  # real users: no simulated devices until a real smart-home integration
     devices = [
         {"name": "Living room lights", "kind": "light", "room": "Living room", "state": {"on": False, "brightness": 70}},
         {"name": "Bedroom lights", "kind": "light", "room": "Bedroom", "state": {"on": False, "brightness": 40}},

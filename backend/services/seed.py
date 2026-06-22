@@ -11,14 +11,29 @@ from connectors import CONNECTOR_CATALOG
 from auth import hash_password
 from utils import new_id, now_iso
 
+# Connectors that only ever serve realistic *demo* data in v0. Real users must
+# connect Google for these to light up, so we don't pre-connect them (which
+# would otherwise surface mock calendar/email/commute/news on a fresh account).
+_DEMO_ONLY_DATA_PROVIDERS = {"google_calendar", "gmail", "google_drive", "maps", "news"}
+
 
 async def provision_defaults(user_id: str):
-    """Create default connected-account states for a user (idempotent)."""
+    """Create default connected-account states for a user (idempotent).
+
+    The demo operator gets the rich, pre-connected experience; real signups start
+    with Google/maps/news *not connected* and light up only after a real connect.
+    """
     db = get_db()
+    user = await db.users.find_one({"id": user_id}, {"is_demo": 1})
+    is_demo = bool(user and user.get("is_demo"))
     existing = {a["provider"] async for a in db.connected_accounts.find({"user_id": user_id})}
     for c in CONNECTOR_CATALOG:
         if c["provider"] in existing:
             continue
+        if is_demo or c["provider"] not in _DEMO_ONLY_DATA_PROVIDERS:
+            status = c["default_state"]
+        else:
+            status = "not_connected"
         await db.connected_accounts.insert_one({
             "id": new_id(),
             "user_id": user_id,
@@ -26,10 +41,24 @@ async def provision_defaults(user_id: str):
             "name": c["name"],
             "icon": c["icon"],
             "category": c["category"],
-            "status": c["default_state"],
-            "connected_at": now_iso() if c["default_state"] == "connected" else None,
+            "status": status,
+            "connected_at": now_iso() if status == "connected" else None,
             "created_at": now_iso(),
         })
+
+
+async def ensure_demo_alive():
+    """Keep the seeded demo operator 'alive': force its demo-only data connectors
+    to 'connected' so the demo always shows its rich mock calendar/email/files,
+    regardless of any prior toggles. No-op if the demo account is absent."""
+    db = get_db()
+    demo = await db.users.find_one({"email": DEMO_EMAIL}, {"id": 1})
+    if not demo:
+        return
+    await db.connected_accounts.update_many(
+        {"user_id": demo["id"], "provider": {"$in": list(_DEMO_ONLY_DATA_PROVIDERS)}},
+        {"$set": {"status": "connected", "connected_at": now_iso()}},
+    )
 
 
 async def _insert_many(coll, user_id, items, base):

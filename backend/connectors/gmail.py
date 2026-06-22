@@ -1,6 +1,7 @@
 """Mock Gmail connector."""
 
 from .base import BaseConnector, ConnectorResult
+from utils import is_demo_user
 
 
 class GmailConnector(BaseConnector):
@@ -15,6 +16,9 @@ class GmailConnector(BaseConnector):
                 return ConnectorResult(provider=self.provider, connected=True, data=real)
         except Exception:
             pass
+        if not await is_demo_user(user_id):
+            return ConnectorResult(provider=self.provider, connected=False,
+                                   data={"emails": [], "important": [], "unread_count": 0})
         emails = [
             {
                 "id": "em_adams",

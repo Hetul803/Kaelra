@@ -1,30 +1,30 @@
 [
   {
-    "content": "Build skills, ContextBuilder, GoogleCallback, ConnectedAccounts, Settings privacy, routes",
+    "content": "Build skills, ContextBuilder, GoogleCallback, ConnectedAccounts, Settings, frictionless onboarding",
     "status": "completed"
   },
   {
-    "content": "Add real secrets, restart backend, verify ElevenLabs TTS (real) + Google configured + OAuth URL",
+    "content": "Real secrets live: ElevenLabs TTS verified, Google configured + OAuth URL correct",
     "status": "completed"
   },
   {
-    "content": "Redesign onboarding to be frictionless (lead with Connect Google; Kaelra infers the rest)",
+    "content": "Fix Google OAuth 'Missing code verifier' (disable PKCE for confidential web client)",
     "status": "completed"
   },
   {
-    "content": "Diagnose Google 403: confirmed app-side never returns 403 → it's Google consent-screen Test-user/External config",
+    "content": "Stop mock data for real accounts: gate provisioning + connectors + skill seeds to demo-only; keep demo alive",
     "status": "completed"
   },
   {
-    "content": "USER: add your Google email as a Test user (consent screen = External, Testing) and retry Connect Google",
+    "content": "Verify clean new-account UI (Today empty states + skills) renders well via screenshot",
     "status": "in_progress"
   },
   {
-    "content": "After user connects: verify real Calendar fetch, Gmail summarization, Drive read-only indexing, Context Builder, then full E2E",
+    "content": "USER: add Google email as Test user (consent=External, Testing) and retry Connect Google (PKCE now fixed)",
     "status": "pending"
   },
   {
-    "content": "(Next) Continuous context: daily auto re-index of new emails/events/docs + deeper preference learning",
+    "content": "After user connects: verify real Calendar/Gmail/Drive + Context Builder, then full E2E",
     "status": "pending"
   }
 ]

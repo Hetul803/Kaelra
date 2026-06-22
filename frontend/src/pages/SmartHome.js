@@ -161,6 +161,17 @@ export default function SmartHome() {
         {devices.map(renderDevice)}
       </div>
 
+      {devices.length === 0 && (
+        <GlassCard className="rounded-2xl p-8 text-center" data-testid="home-empty">
+          <Home size={26} className="mx-auto text-[hsl(var(--primary))]" />
+          <p className="mt-3 font-heading">No smart-home devices yet</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+            Real smart-home integrations are coming soon. When you connect a hub, your lights,
+            thermostat and locks will appear here — with approval gates on anything sensitive.
+          </p>
+        </GlassCard>
+      )}
+
       <GlassCard className="rounded-2xl p-4" data-testid="home-routines">
         <SectionTitle kicker="Automations" title="Home routines" icon={Home} />
         <div className="grid gap-2 sm:grid-cols-3">

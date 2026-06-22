@@ -148,7 +148,9 @@ export default function Jobs() {
               <JobCard key={j.id} job={j} onStatus={onStatus} onReply={onReply} busy={busyId === j.id} />
             ))}
             {matches.length === 0 && (
-              <p className="text-sm text-muted-foreground">No new matches — you've triaged them all.</p>
+              <p className="text-sm text-muted-foreground">
+                No job matches yet. Upload your resume in Files (or connect Drive) and Kaelra will surface roles that fit — and prepare recruiter replies for your approval.
+              </p>
             )}
           </div>
         </TabsContent>

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from config import get_db
-from utils import new_id, now_iso, clean_docs, clean_doc
+from utils import new_id, now_iso, clean_docs, clean_doc, is_demo_user
 from services.audit import log_event
 from services.actions import create_actions
 from services import kaelra
@@ -14,6 +14,8 @@ async def ensure_seed(user_id: str):
     db = get_db()
     if await db.classes.count_documents({"user_id": user_id}) > 0:
         return
+    if not await is_demo_user(user_id):
+        return  # real users: classes/assignments come from their own input + connected sources
     classes = [
         {"name": "CS-401 Software Engineering", "professor": "Prof. Adams", "professor_email": "adams@university.edu",
          "schedule": "Mon/Wed 11:00 AM", "location": "Hall B"},

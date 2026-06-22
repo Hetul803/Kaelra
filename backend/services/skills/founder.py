@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 from config import get_db
-from utils import new_id, now_iso, clean_docs, clean_doc
+from utils import new_id, now_iso, clean_docs, clean_doc, is_demo_user
 from services.audit import log_event
 from services.actions import create_actions
 from services import kaelra
 from llm import complete, TaskType
+
+
+_EMPTY_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+def _empty_metrics() -> dict:
+    return {
+        "impressions": 0, "clicks": 0, "ctr": 0, "signups": 0,
+        "trend": "Connect an analytics source and I'll track your traction.",
+        "series": [{"day": d, "impressions": 0} for d in _EMPTY_DAYS],
+    }
 
 
 class AnalyticsConnector:
@@ -32,6 +43,12 @@ async def ensure_seed(user_id: str):
     if await db.projects.count_documents({"user_id": user_id}) > 0:
         return
     pid = new_id()
+    if not await is_demo_user(user_id):
+        # Real users get a clean, empty workspace they build up themselves.
+        await db.projects.insert_one({"id": pid, "user_id": user_id, "name": "My Workspace",
+                                      "tagline": "Your founder workspace — add your project, tasks and checklist.",
+                                      "stage": "Idea", "created_at": now_iso()})
+        return
     await db.projects.insert_one({"id": pid, "user_id": user_id, "name": "Aegisure",
                                   "tagline": "Security checks for indie builders",
                                   "stage": "Pre-launch", "created_at": now_iso()})
@@ -60,7 +77,8 @@ async def overview(user_id: str) -> dict:
     project = clean_doc(await db.projects.find_one({"user_id": user_id}))
     tasks = clean_docs(await db.project_tasks.find({"user_id": user_id}).sort("created_at", 1).to_list(200))
     checklist = clean_docs(await db.project_checklist.find({"user_id": user_id}).sort("created_at", 1).to_list(50))
-    return {"project": project, "tasks": tasks, "checklist": checklist, "metrics": _analytics.snapshot()}
+    metrics = _analytics.snapshot() if await is_demo_user(user_id) else _empty_metrics()
+    return {"project": project, "tasks": tasks, "checklist": checklist, "metrics": metrics}
 
 
 async def add_task(user_id: str, data: dict) -> dict:
@@ -113,6 +131,9 @@ async def draft_post(user_id: str, topic: str, profile: dict) -> dict:
 
 
 async def summarize_metrics(user_id: str, profile: dict) -> dict:
+    if not await is_demo_user(user_id):
+        return {"summary": "Connect an analytics source (or add your numbers) and I'll summarize your traction and suggest a growth move.",
+                "metrics": _empty_metrics(), "actions_prepared": 0}
     snap = _analytics.snapshot()
     system = kaelra.persona(profile) + "\n\nIn 2-3 sentences, summarize these startup metrics and suggest one growth move."
     import json
