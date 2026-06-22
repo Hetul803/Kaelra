@@ -8,6 +8,13 @@ class DriveConnector(BaseConnector):
     name = "Google Drive"
 
     async def fetch(self, user_id: str, profile: dict) -> ConnectorResult:
+        try:
+            from services.google_api import drive_files
+            real = await drive_files(user_id)
+            if real is not None:
+                return ConnectorResult(provider=self.provider, connected=True, data=real)
+        except Exception:
+            pass
         files = [
             {
                 "id": "dr_syllabus",

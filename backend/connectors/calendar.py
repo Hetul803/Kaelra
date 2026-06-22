@@ -10,6 +10,14 @@ class CalendarConnector(BaseConnector):
     name = "Google Calendar"
 
     async def fetch(self, user_id: str, profile: dict) -> ConnectorResult:
+        # Real Google data when connected, else realistic demo data.
+        try:
+            from services.google_api import calendar_today
+            real = await calendar_today(user_id)
+            if real is not None:
+                return ConnectorResult(provider=self.provider, connected=True, data=real)
+        except Exception:
+            pass
         # Deterministic, realistic "today" schedule for the demo operator.
         work_start = at_time(14, 0)
         work_end = at_time(22, 0)

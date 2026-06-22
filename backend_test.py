@@ -1094,6 +1094,588 @@ Key action items:
             if success and 'memories' in memories and len(memories['memories']) == 0:
                 self.log("✅ Memories wiped after delete", "PASS")
     
+    # ==================== SKILLS: JOBS TESTS ====================
+    def test_skills_jobs(self):
+        """Test Jobs skill endpoints"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING SKILLS: JOBS", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get jobs overview
+        success, overview = self.run_test(
+            "Get jobs overview",
+            "GET",
+            "jobs",
+            200,
+            token=self.demo_token
+        )
+        
+        job_id = None
+        if success:
+            if 'matches' in overview and 'pipeline' in overview and 'counts' in overview:
+                self.log(f"✅ Jobs overview structure correct", "PASS")
+                self.log(f"   Matches: {len(overview['matches'])}, Counts: {overview['counts']}", "INFO")
+            if overview.get('matches') and len(overview['matches']) > 0:
+                job_id = overview['matches'][0].get('id')
+        
+        # Get best resume
+        success, resume = self.run_test(
+            "Get best resume",
+            "GET",
+            "jobs/best-resume",
+            200,
+            token=self.demo_token
+        )
+        if success and 'resume' in resume:
+            self.log(f"✅ Best resume returned", "PASS")
+        
+        if job_id:
+            # Test status changes
+            for status in ['saved', 'applied', 'interviewing']:
+                success, updated = self.run_test(
+                    f"Set job status to {status}",
+                    "POST",
+                    f"jobs/{job_id}/status",
+                    200,
+                    data={"status": status},
+                    token=self.demo_token
+                )
+                if success and updated.get('status') == status:
+                    self.log(f"✅ Job status set to {status}", "PASS")
+                    # Check if 'applied' created a follow-up action
+                    if status == 'applied':
+                        time.sleep(0.5)
+                        act_success, actions = self.run_test(
+                            "Check follow-up action created",
+                            "GET",
+                            "actions?status=pending",
+                            200,
+                            token=self.demo_token
+                        )
+                        if act_success:
+                            follow_ups = [a for a in actions if 'follow up' in a.get('title', '').lower()]
+                            if follow_ups:
+                                self.log(f"✅ Follow-up action created for 'applied' status", "PASS")
+            
+            # Test invalid status
+            self.run_test(
+                "Set job status (invalid)",
+                "POST",
+                f"jobs/{job_id}/status",
+                400,
+                data={"status": "invalid_status"},
+                token=self.demo_token
+            )
+            
+            # Test recruiter reply draft
+            success, draft = self.run_test(
+                "Draft recruiter reply",
+                "POST",
+                f"jobs/{job_id}/recruiter-reply",
+                200,
+                token=self.demo_token
+            )
+            if success:
+                if 'draft' in draft:
+                    self.log(f"✅ Recruiter reply draft: {draft['draft'][:80]}...", "PASS")
+                if 'actions_prepared' in draft and draft['actions_prepared'] > 0:
+                    self.log(f"✅ Sensitive action created (requires approval)", "PASS")
+    
+    # ==================== SKILLS: CLASS TESTS ====================
+    def test_skills_class(self):
+        """Test Class skill endpoints"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING SKILLS: CLASS", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get class overview
+        success, overview = self.run_test(
+            "Get class overview",
+            "GET",
+            "class",
+            200,
+            token=self.demo_token
+        )
+        
+        assignment_id = None
+        class_id = None
+        if success:
+            if 'classes' in overview and 'assignments' in overview:
+                self.log(f"✅ Class overview structure correct", "PASS")
+                self.log(f"   Classes: {len(overview['classes'])}, Assignments: {len(overview['assignments'])}", "INFO")
+            if overview.get('assignments') and len(overview['assignments']) > 0:
+                assignment_id = overview['assignments'][0].get('id')
+            if overview.get('classes') and len(overview['classes']) > 0:
+                class_id = overview['classes'][0].get('id')
+        
+        # Add assignment
+        success, created = self.run_test(
+            "Add assignment",
+            "POST",
+            "class/assignments",
+            200,
+            data={
+                "title": "Test Assignment",
+                "course": "CS-101",
+                "due": "Oct 30, 2025",
+                "priority": "high"
+            },
+            token=self.demo_token
+        )
+        if success and 'id' in created:
+            assignment_id = created['id']
+            self.log(f"✅ Assignment created with ID: {assignment_id}", "PASS")
+        
+        if assignment_id:
+            # Change assignment status
+            for status in ['in_progress', 'done']:
+                success, updated = self.run_test(
+                    f"Set assignment status to {status}",
+                    "POST",
+                    f"class/assignments/{assignment_id}/status",
+                    200,
+                    data={"status": status},
+                    token=self.demo_token
+                )
+                if success and updated.get('status') == status:
+                    self.log(f"✅ Assignment status set to {status}", "PASS")
+            
+            # Test study plan
+            success, plan = self.run_test(
+                "Generate study plan",
+                "POST",
+                f"class/assignments/{assignment_id}/study-plan",
+                200,
+                token=self.demo_token
+            )
+            if success:
+                if 'plan' in plan:
+                    self.log(f"✅ Study plan generated: {plan['plan'][:80]}...", "PASS")
+                if 'actions_prepared' in plan and plan['actions_prepared'] > 0:
+                    self.log(f"✅ Study plan action created", "PASS")
+        
+        if class_id:
+            # Test professor reply
+            success, reply = self.run_test(
+                "Draft professor reply",
+                "POST",
+                f"class/{class_id}/professor-reply",
+                200,
+                data={"note": "I have a question about the midterm"},
+                token=self.demo_token
+            )
+            if success:
+                if 'draft' in reply:
+                    self.log(f"✅ Professor reply draft: {reply['draft'][:80]}...", "PASS")
+                if 'actions_prepared' in reply and reply['actions_prepared'] > 0:
+                    self.log(f"✅ Sensitive action created (requires approval)", "PASS")
+    
+    # ==================== SKILLS: FOUNDER TESTS ====================
+    def test_skills_founder(self):
+        """Test Founder skill endpoints"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING SKILLS: FOUNDER", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get founder overview
+        success, overview = self.run_test(
+            "Get founder overview",
+            "GET",
+            "founder",
+            200,
+            token=self.demo_token
+        )
+        
+        task_id = None
+        checklist_id = None
+        if success:
+            if 'project' in overview and 'tasks' in overview and 'checklist' in overview and 'metrics' in overview:
+                self.log(f"✅ Founder overview structure correct", "PASS")
+                self.log(f"   Tasks: {len(overview['tasks'])}, Checklist: {len(overview['checklist'])}", "INFO")
+            if 'metrics' in overview and 'series' in overview['metrics']:
+                self.log(f"✅ Metrics with series data returned", "PASS")
+            if overview.get('tasks') and len(overview['tasks']) > 0:
+                task_id = overview['tasks'][0].get('id')
+            if overview.get('checklist') and len(overview['checklist']) > 0:
+                checklist_id = overview['checklist'][0].get('id')
+        
+        # Add task
+        success, created = self.run_test(
+            "Add founder task",
+            "POST",
+            "founder/tasks",
+            200,
+            data={
+                "title": "Test task for startup",
+                "priority": "high"
+            },
+            token=self.demo_token
+        )
+        if success and 'id' in created:
+            task_id = created['id']
+            self.log(f"✅ Task created with ID: {task_id}", "PASS")
+        
+        if task_id:
+            # Change task status
+            for status in ['in_progress', 'done']:
+                success, updated = self.run_test(
+                    f"Set task status to {status}",
+                    "POST",
+                    f"founder/tasks/{task_id}/status",
+                    200,
+                    data={"status": status},
+                    token=self.demo_token
+                )
+                if success and updated.get('status') == status:
+                    self.log(f"✅ Task status set to {status}", "PASS")
+        
+        if checklist_id:
+            # Toggle checklist item
+            success, toggled = self.run_test(
+                "Toggle checklist item",
+                "POST",
+                f"founder/checklist/{checklist_id}/toggle",
+                200,
+                token=self.demo_token
+            )
+            if success and 'done' in toggled:
+                self.log(f"✅ Checklist item toggled to done={toggled['done']}", "PASS")
+        
+        # Draft LinkedIn post
+        success, post = self.run_test(
+            "Draft LinkedIn post",
+            "POST",
+            "founder/draft-post",
+            200,
+            data={"topic": "Launch announcement"},
+            token=self.demo_token
+        )
+        if success:
+            if 'post' in post:
+                self.log(f"✅ LinkedIn post draft: {post['post'][:80]}...", "PASS")
+            if 'actions_prepared' in post and post['actions_prepared'] > 0:
+                self.log(f"✅ Sensitive action created (requires approval)", "PASS")
+        
+        # Summarize metrics
+        success, summary = self.run_test(
+            "Summarize metrics",
+            "POST",
+            "founder/summarize-metrics",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if 'summary' in summary:
+                self.log(f"✅ Metrics summary: {summary['summary'][:80]}...", "PASS")
+            if 'metrics' in summary:
+                self.log(f"✅ Metrics data included", "PASS")
+    
+    # ==================== SKILLS: SMART HOME TESTS ====================
+    def test_skills_smarthome(self):
+        """Test Smart Home skill endpoints"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING SKILLS: SMART HOME", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get home overview
+        success, overview = self.run_test(
+            "Get home overview",
+            "GET",
+            "home",
+            200,
+            token=self.demo_token
+        )
+        
+        light_id = None
+        thermostat_id = None
+        lock_id = None
+        alarm_id = None
+        
+        if success:
+            if 'devices' in overview and 'routines' in overview:
+                self.log(f"✅ Home overview structure correct", "PASS")
+                self.log(f"   Devices: {len(overview['devices'])}, Routines: {len(overview['routines'])}", "INFO")
+            if 'simulated' in overview and overview['simulated']:
+                self.log(f"✅ Simulated flag present (expected for v0)", "PASS")
+            
+            # Find device IDs by kind
+            for dev in overview.get('devices', []):
+                if dev.get('kind') == 'light' and not light_id:
+                    light_id = dev['id']
+                elif dev.get('kind') == 'thermostat':
+                    thermostat_id = dev['id']
+                elif dev.get('kind') == 'lock':
+                    lock_id = dev['id']
+                elif dev.get('kind') == 'alarm':
+                    alarm_id = dev['id']
+        
+        # Test light control (should change immediately)
+        if light_id:
+            success, result = self.run_test(
+                "Turn on light",
+                "PUT",
+                f"home/devices/{light_id}",
+                200,
+                data={"state": {"on": True, "brightness": 80}},
+                token=self.demo_token
+            )
+            if success and 'device' in result:
+                if result['device'].get('state', {}).get('on') == True:
+                    self.log(f"✅ Light turned on immediately", "PASS")
+        
+        # Test thermostat control (should change immediately)
+        if thermostat_id:
+            success, result = self.run_test(
+                "Set thermostat",
+                "PUT",
+                f"home/devices/{thermostat_id}",
+                200,
+                data={"state": {"temp": 75}},
+                token=self.demo_token
+            )
+            if success and 'device' in result:
+                if result['device'].get('state', {}).get('temp') == 75:
+                    self.log(f"✅ Thermostat set immediately", "PASS")
+        
+        # Test lock control (should NOT change, requires approval)
+        if lock_id:
+            success, result = self.run_test(
+                "Request lock/unlock (sensitive)",
+                "PUT",
+                f"home/devices/{lock_id}",
+                200,
+                data={"state": {"locked": False}},
+                token=self.demo_token
+            )
+            if success:
+                if result.get('pending_approval') == True:
+                    self.log(f"✅ Lock request requires approval (not changed immediately)", "PASS")
+                if result.get('actions_prepared', 0) > 0:
+                    self.log(f"✅ Sensitive action created for lock", "PASS")
+                # Verify lock state did NOT change
+                if 'device' in result and result['device'].get('state', {}).get('locked') == True:
+                    self.log(f"✅ Lock state unchanged (still locked)", "PASS")
+        
+        # Test alarm control (should change immediately)
+        if alarm_id:
+            success, result = self.run_test(
+                "Arm alarm",
+                "PUT",
+                f"home/devices/{alarm_id}",
+                200,
+                data={"state": {"armed": True}},
+                token=self.demo_token
+            )
+            if success and 'device' in result:
+                if result['device'].get('state', {}).get('armed') == True:
+                    self.log(f"✅ Alarm armed immediately", "PASS")
+        
+        # Test morning routine
+        success, result = self.run_test(
+            "Run morning routine",
+            "POST",
+            "home/morning-routine",
+            200,
+            token=self.demo_token
+        )
+        if success and 'devices' in result:
+            self.log(f"✅ Morning routine executed", "PASS")
+        
+        # Add custom routine
+        success, created = self.run_test(
+            "Add custom routine",
+            "POST",
+            "home/routines",
+            200,
+            data={
+                "name": "Test routine",
+                "actions": "Turn off all lights, lock doors"
+            },
+            token=self.demo_token
+        )
+        if success and 'id' in created:
+            self.log(f"✅ Custom routine created", "PASS")
+    
+    # ==================== CONTEXT BUILDER TESTS ====================
+    def test_context_builder(self):
+        """Test Context Builder endpoints"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING CONTEXT BUILDER", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get context status
+        success, status = self.run_test(
+            "Get context status",
+            "GET",
+            "context/status",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if 'indexed' in status and 'indexing_paused' in status:
+                self.log(f"✅ Context status structure correct", "PASS")
+                self.log(f"   Indexed: {status.get('indexed')}, Paused: {status.get('indexing_paused')}", "INFO")
+        
+        # Build context
+        self.log("Building context (may take ~30s with LLM)...", "INFO")
+        success, result = self.run_test(
+            "Build context",
+            "POST",
+            "context/build",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if 'indexed' in result:
+                self.log(f"✅ Context built: {result['indexed']}", "PASS")
+            if 'sources' in result:
+                self.log(f"✅ Sources: {result['sources']}", "PASS")
+            if 'steps' in result and len(result['steps']) > 0:
+                self.log(f"✅ Progress steps returned", "PASS")
+            if 'suggested_memories' in result:
+                self.log(f"✅ Suggested {result['suggested_memories']} memories", "PASS")
+        
+        # Get suggested memories
+        success, suggestions = self.run_test(
+            "Get suggested memories",
+            "GET",
+            "context/suggested-memories",
+            200,
+            token=self.demo_token
+        )
+        
+        suggestion_id = None
+        if success and len(suggestions) > 0:
+            self.log(f"✅ Found {len(suggestions)} suggested memories", "PASS")
+            suggestion_id = suggestions[0].get('id')
+        
+        if suggestion_id:
+            # Approve a suggestion
+            success, result = self.run_test(
+                "Approve suggested memory",
+                "POST",
+                f"context/suggested-memories/{suggestion_id}/resolve",
+                200,
+                data={"approve": True},
+                token=self.demo_token
+            )
+            if success and result.get('ok'):
+                self.log(f"✅ Suggested memory approved", "PASS")
+        
+        # Pause indexing
+        success, result = self.run_test(
+            "Pause indexing",
+            "POST",
+            "context/pause",
+            200,
+            data={"paused": True},
+            token=self.demo_token
+        )
+        if success and result.get('paused') == True:
+            self.log(f"✅ Indexing paused", "PASS")
+        
+        # Resume indexing
+        success, result = self.run_test(
+            "Resume indexing",
+            "POST",
+            "context/pause",
+            200,
+            data={"paused": False},
+            token=self.demo_token
+        )
+        if success and result.get('paused') == False:
+            self.log(f"✅ Indexing resumed", "PASS")
+        
+        # Delete indexed data
+        success, result = self.run_test(
+            "Delete indexed data",
+            "DELETE",
+            "context/indexed",
+            200,
+            token=self.demo_token
+        )
+        if success and result.get('ok'):
+            self.log(f"✅ Indexed data deleted", "PASS")
+    
+    # ==================== VOICE FALLBACK TESTS ====================
+    def test_voice_fallback(self):
+        """Test voice endpoints with browser fallback"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING VOICE FALLBACK", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get voice status (should show browser fallback)
+        success, status = self.run_test(
+            "Get voice status",
+            "GET",
+            "voice/status",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if status.get('provider') == 'browser' and status.get('configured') == False:
+                self.log(f"✅ Voice fallback to browser (ElevenLabs not configured)", "PASS")
+            else:
+                self.log(f"⚠️  Expected browser fallback, got: {status}", "WARN")
+        
+        # Test TTS (should return graceful fallback)
+        success, result = self.run_test(
+            "TTS request (browser fallback)",
+            "POST",
+            "voice/tts",
+            200,
+            data={"text": "Hello, this is a test"},
+            token=self.demo_token
+        )
+        if success:
+            if result.get('audio') is None and result.get('provider') == 'browser':
+                self.log(f"✅ TTS gracefully returns browser fallback (no 500 error)", "PASS")
+            else:
+                self.log(f"⚠️  Expected browser fallback, got: {result}", "WARN")
+    
+    # ==================== GOOGLE OAUTH TESTS ====================
+    def test_google_oauth(self):
+        """Test Google OAuth endpoints (not configured)"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING GOOGLE OAUTH (NOT CONFIGURED)", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get Google status (should show not configured)
+        success, status = self.run_test(
+            "Get Google OAuth status",
+            "GET",
+            "oauth/google/status",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if status.get('configured') == False and status.get('connected') == False:
+                self.log(f"✅ Google OAuth not configured (expected)", "PASS")
+            else:
+                self.log(f"⚠️  Expected not configured, got: {status}", "WARN")
+        
+        # Try to get auth URL (should fail gracefully with 400)
+        success, result = self.run_test(
+            "Get Google auth URL (should fail)",
+            "GET",
+            "oauth/google/url?redirect_uri=http://localhost:3000/auth/google",
+            400,
+            token=self.demo_token
+        )
+        if success:
+            self.log(f"✅ Google auth URL returns 400 with helpful message (not configured)", "PASS")
+        
+        # Test disconnect (should succeed even if not connected)
+        success, result = self.run_test(
+            "Disconnect Google (graceful)",
+            "POST",
+            "oauth/google/disconnect",
+            200,
+            token=self.demo_token
+        )
+        if success and result.get('ok'):
+            self.log(f"✅ Google disconnect succeeds gracefully", "PASS")
+    
     # ==================== RUN ALL TESTS ====================
     def run_all_tests(self):
         """Run all test suites"""
@@ -1105,6 +1687,7 @@ Key action items:
         self.log("=" * 60, "INFO")
         
         try:
+            # Core tests
             self.test_auth()
             self.test_onboarding()
             self.test_dashboard()
@@ -1120,6 +1703,20 @@ Key action items:
             self.test_notifications()
             self.test_audit()
             self.test_privacy()
+            
+            # NEW: Skills tests
+            self.test_skills_jobs()
+            self.test_skills_class()
+            self.test_skills_founder()
+            self.test_skills_smarthome()
+            
+            # NEW: Context Builder tests
+            self.test_context_builder()
+            
+            # NEW: Voice and Google OAuth fallback tests
+            self.test_voice_fallback()
+            self.test_google_oauth()
+            
         except KeyboardInterrupt:
             self.log("\n⚠️  Tests interrupted by user", "WARN")
         except Exception as e:

@@ -147,6 +147,24 @@ async def seed_demo():
         "created_at": now_iso(),
     })
 
+    # A resume on file so the Jobs skill can recommend the best one
+    resume_id = new_id()
+    await db.files.insert_one({
+        "id": resume_id, "user_id": user_id, "name": "Hetul_Resume_2025.pdf", "kind": "pdf",
+        "size": 24800,
+        "text": ("Hetul \u2014 Backend Engineer. Skills: Python, FastAPI, MongoDB, React, Docker. "
+                 "Experience: built Aegisure (security checks for indie builders), TA for CS-330. "
+                 "Education: BS Computer Science (in progress). Seeking backend internship."),
+        "important": True, "created_at": now_iso(),
+    })
+    await db.file_summaries.insert_one({
+        "id": new_id(), "user_id": user_id, "file_id": resume_id,
+        "summary": "Hetul's 2025 resume tailored to backend roles (Python/FastAPI/MongoDB), featuring Aegisure and TA experience.",
+        "people": ["Hetul"], "deadlines": [],
+        "action_items": ["Use for backend internship applications"],
+        "key_context": ["Strongest for backend/platform roles"], "created_at": now_iso(),
+    })
+
     # Prepared (pending) actions \u2014 the alive Action Queue on first login
     await _insert_many(db.actions, user_id, [
         {"type": "draft_email", "title": "Reply to Prof. Adams about Assignment 3",

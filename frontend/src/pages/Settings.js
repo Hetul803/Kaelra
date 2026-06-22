@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { GlassCard, SectionTitle, LoadingState } from "../components/Bits";
+import { GlassCard, SectionTitle, StatusPill, LoadingState } from "../components/Bits";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -17,6 +17,7 @@ import {
 } from "../components/ui/alert-dialog";
 import {
   User, Sparkles, ShieldCheck, Bell, Mic, Download, Trash2, ScrollText, Save,
+  Link2, Brain, Database, Check, X, RefreshCw,
 } from "lucide-react";
 
 const TONES = ["calm", "friendly", "direct", "energetic"];
@@ -34,16 +35,60 @@ export default function Settings() {
   const [audit, setAudit] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [ctx, setCtx] = useState(null);
+  const [google, setGoogle] = useState(null);
+  const [suggested, setSuggested] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [me, a] = await Promise.all([api.get("/auth/me"), api.get("/audit")]);
+      const [me, a, c, g, sm] = await Promise.all([
+        api.get("/auth/me"),
+        api.get("/audit"),
+        api.get("/context/status").catch(() => ({ data: null })),
+        api.get("/oauth/google/status").catch(() => ({ data: { configured: false, connected: false } })),
+        api.get("/context/suggested-memories").catch(() => ({ data: [] })),
+      ]);
       setProfile(me.data.profile || {});
       setAudit(a.data);
+      setCtx(c.data);
+      setGoogle(g.data);
+      setSuggested(sm.data || []);
     } finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const pauseIndexing = async (paused) => {
+    try {
+      await api.post("/context/pause", { paused });
+      setCtx((c) => ({ ...(c || {}), indexing_paused: paused }));
+      toast.success(paused ? "Indexing paused." : "Indexing resumed.");
+    } catch (e) { toast.error("Couldn't update indexing."); }
+  };
+
+  const deleteIndexed = async () => {
+    try {
+      await api.delete("/context/indexed");
+      toast.success("Indexed data deleted.");
+      load();
+    } catch (e) { toast.error("Couldn't delete indexed data."); }
+  };
+
+  const disconnectGoogle = async () => {
+    try {
+      await api.post("/oauth/google/disconnect");
+      toast.success("Disconnected your Google account.");
+      load();
+    } catch (e) { toast.error("Couldn't disconnect."); }
+  };
+
+  const resolveSuggested = async (id, approve) => {
+    try {
+      await api.post(`/context/suggested-memories/${id}/resolve`, { approve });
+      setSuggested((list) => list.filter((s) => s.id !== id));
+      toast.success(approve ? "Saved to memory." : "Dismissed.");
+    } catch (e) { toast.error("Couldn't update."); }
+  };
 
   const set = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
   const setApproval = (k, v) => setProfile((p) => ({ ...p, approval_rules: { ...(p.approval_rules || {}), [k]: v } }));
@@ -178,6 +223,89 @@ export default function Settings() {
             </AlertDialogContent>
           </AlertDialog>
         </div>
+      </GlassCard>
+
+      {/* Connected context & privacy */}
+      <GlassCard className="rounded-2xl p-5" data-testid="settings-context-privacy">
+        <SectionTitle kicker="Your sources" title="Connected context" icon={Link2} />
+        <p className="mb-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <ShieldCheck size={14} className="text-[hsl(var(--primary))]" />
+          Kaelra only ever uses the sources you connect.
+        </p>
+
+        {/* Google connection */}
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+          <div className="min-w-0">
+            <div className="text-sm">Google (Calendar, Gmail, Drive)</div>
+            <div className="truncate text-xs text-muted-foreground">
+              {google?.connected ? google.email : (google?.configured ? "Not connected" : "Not configured — using demo data")}
+            </div>
+          </div>
+          {google?.connected
+            ? <Button size="sm" variant="secondary" className="shrink-0 text-[rgb(254,202,202)]" onClick={disconnectGoogle} data-testid="settings-google-disconnect">Disconnect</Button>
+            : <StatusPill tone="default">Manage in Accounts</StatusPill>}
+        </div>
+
+        {/* Indexing controls */}
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Database size={16} className="text-[hsl(var(--primary))]" />
+            <div>
+              <div className="text-sm">Pause indexing</div>
+              <div className="text-xs text-muted-foreground">
+                {ctx?.indexed
+                  ? `Indexed ${ctx.indexed.events || 0} events · ${ctx.indexed.emails || 0} emails · ${ctx.indexed.files || 0} files`
+                  : "Stop Kaelra from indexing your connected sources."}
+              </div>
+            </div>
+          </div>
+          <Switch checked={!!ctx?.indexing_paused} onCheckedChange={pauseIndexing} data-testid="settings-pause-indexing" />
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="secondary" className="gap-1.5 text-[rgb(254,202,202)]" data-testid="settings-delete-indexed-button">
+                <Trash2 size={16} /> Delete indexed data
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="glass-strong border-white/10">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete indexed data?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This clears Kaelra's index of your connected sources and any suggested memories. Your Google connection stays; you can rebuild context anytime.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteIndexed}>Delete indexed data</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        {/* Suggested memories review */}
+        {suggested.length > 0 && (
+          <div className="mt-4">
+            <div className="kaelra-kicker mb-2 flex items-center gap-1.5"><Brain size={12} /> Suggested memories to review</div>
+            <div className="space-y-2" data-testid="settings-suggested-memories">
+              {suggested.map((s) => (
+                <div key={s.id} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5" data-testid="suggested-memory-item">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm">{s.content}</div>
+                    <div className="text-[11px] text-muted-foreground font-mono-k">{s.category}</div>
+                  </div>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-[rgb(134,239,172)]" onClick={() => resolveSuggested(s.id, true)} data-testid="suggested-memory-approve" aria-label="Save memory">
+                    <Check size={16} />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={() => resolveSuggested(s.id, false)} data-testid="suggested-memory-reject" aria-label="Dismiss memory">
+                    <X size={16} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </GlassCard>
 
       {/* Audit log */}

@@ -1,18 +1,30 @@
 [
   {
-    "content": "Phase 1: Core POC (LLM abstraction + test_core.py all passed)",
+    "content": "Build ContextBuilder + GoogleCallback + 4 skill pages + routes",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Design guidelines + backend system + 11 frontend screens",
+    "content": "Rewrite ConnectedAccounts.js with real Google OAuth hero + Context rebuild",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Backend testing (100% 59/59 passed)",
+    "content": "Add Context & Privacy controls to Settings.js",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Frontend E2E testing + fix Talk race condition & mobile nav (100% 9/9 passed)",
+    "content": "Update Onboarding final-step copy + Talk auto-speak preference wiring",
     "status": "completed"
+  },
+  {
+    "content": "Verify frontend compiles (esbuild) + screenshot key screens",
+    "status": "completed"
+  },
+  {
+    "content": "E2E testing: backend (skills/context/voice/google) + frontend (skill pages, connect flow, settings) in mock mode",
+    "status": "in_progress"
+  },
+  {
+    "content": "User: add GOOGLE_CLIENT_ID/SECRET + ELEVENLABS keys to secrets panel & register redirect URI; then restart + verify real integrations",
+    "status": "pending"
   }
 ]

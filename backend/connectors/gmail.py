@@ -8,6 +8,13 @@ class GmailConnector(BaseConnector):
     name = "Gmail"
 
     async def fetch(self, user_id: str, profile: dict) -> ConnectorResult:
+        try:
+            from services.google_api import gmail_important
+            real = await gmail_important(user_id)
+            if real is not None:
+                return ConnectorResult(provider=self.provider, connected=True, data=real)
+        except Exception:
+            pass
         emails = [
             {
                 "id": "em_adams",

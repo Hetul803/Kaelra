@@ -167,7 +167,7 @@ export default function Onboarding() {
     },
     {
       title: "Connect your world (optional)",
-      hint: "Kaelra works with realistic demo data now — connect these for real later.",
+      hint: "After setup, connect your Google account on Connected Accounts — I'll learn what matters to you and prepare your first briefing.",
       valid: true,
       body: (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -175,7 +175,7 @@ export default function Onboarding() {
             <div key={c.name} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-[hsl(var(--primary))]"><c.icon size={16} /></span>
               <div className="flex-1"><div className="text-sm">{c.name}</div>
-                <div className="text-xs text-muted-foreground font-mono-k">Demo connected</div></div>
+                <div className="text-xs text-muted-foreground font-mono-k">Ready when you are</div></div>
               <Check size={16} className="text-[hsl(var(--primary))]" />
             </div>
           ))}

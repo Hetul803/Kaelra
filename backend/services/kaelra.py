@@ -13,10 +13,23 @@ VALID_ACTION_TYPES = [
     "commute_alert", "news_brief", "file_summary", "organize_file_suggestion",
     "job_match", "draft_application", "assignment_reminder", "calendar_suggestion",
     "follow_up", "startup_task", "general_task",
+    # Jobs / Career skill
+    "save_job", "draft_recruiter_reply", "attach_resume", "create_follow_up",
+    "mark_applied", "prepare_application",
+    # Class / School skill
+    "study_plan", "professor_reply_draft", "deadline_alert",
+    # Founder / Aegisure skill
+    "draft_linkedin_post", "create_product_task", "summarize_metrics",
+    "suggest_growth_action", "follow_up_user",
+    # Smart Home skill
+    "turn_light_on", "set_temperature", "create_home_routine",
+    "lock_door_pending_approval", "morning_home_routine",
 ]
 
 SENSITIVE_TYPES = {
     "draft_email", "draft_application", "calendar_suggestion",
+    "draft_recruiter_reply", "prepare_application", "professor_reply_draft",
+    "draft_linkedin_post", "lock_door_pending_approval",
 }
 
 _TONE_GUIDE = {

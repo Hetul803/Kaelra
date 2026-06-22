@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid, MessageCircle, ListChecks, Brain, FolderOpen,
   Bell, Plug, MonitorSmartphone, Settings as SettingsIcon,
-  Menu, LogOut, ChevronRight,
+  Menu, LogOut, ChevronRight, Briefcase, GraduationCap, Rocket, Home,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -18,6 +18,12 @@ const PRIMARY_NAV = [
   { to: "/queue", label: "Action Queue", icon: ListChecks, badgeKey: "pending" },
   { to: "/memory", label: "Memory", icon: Brain },
   { to: "/files", label: "Files", icon: FolderOpen },
+];
+const SKILLS_NAV = [
+  { to: "/jobs", label: "Jobs & Career", icon: Briefcase },
+  { to: "/class", label: "Class & School", icon: GraduationCap },
+  { to: "/founder", label: "Founder Workspace", icon: Rocket },
+  { to: "/home", label: "Smart Home", icon: Home },
 ];
 const SECONDARY_NAV = [
   { to: "/routines", label: "Routines", icon: Bell },
@@ -96,8 +102,10 @@ export function AppShell({ children, title }) {
             </div>
           </button>
 
-          <nav className="mt-2 flex flex-col gap-1">
+          <nav className="mt-2 flex flex-1 min-h-0 flex-col gap-1 overflow-y-auto pr-1">
             {PRIMARY_NAV.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
+            <div className="px-3 pb-1 pt-3 kaelra-kicker">Skills</div>
+            {SKILLS_NAV.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
             <div className="my-2 h-px bg-white/5" />
             {SECONDARY_NAV.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
           </nav>
@@ -194,7 +202,7 @@ export function AppShell({ children, title }) {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            {[...PRIMARY_NAV, ...SECONDARY_NAV].map((item) => (
+            {[...PRIMARY_NAV, ...SKILLS_NAV, ...SECONDARY_NAV].map((item) => (
               <NavItem key={item.to} item={item} counts={counts} onClick={() => setMoreOpen(false)} />
             ))}
           </div>

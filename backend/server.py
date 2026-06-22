@@ -20,6 +20,10 @@ from routes import actions as actions_routes
 from routes import knowledge as knowledge_routes
 from routes import files as files_routes
 from routes import accounts as accounts_routes
+from routes import voice as voice_routes
+from routes import google as google_routes
+from routes import context as context_routes
+from routes import skills as skills_routes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,6 +54,10 @@ api_router.include_router(actions_routes.router, tags=["actions"])
 api_router.include_router(knowledge_routes.router, tags=["knowledge"])
 api_router.include_router(files_routes.router, tags=["files"])
 api_router.include_router(accounts_routes.router, tags=["accounts"])
+api_router.include_router(voice_routes.router, tags=["voice"])
+api_router.include_router(google_routes.router, tags=["google"])
+api_router.include_router(context_routes.router, tags=["context"])
+api_router.include_router(skills_routes.router, tags=["skills"])
 
 app.include_router(api_router)
 
@@ -69,8 +77,18 @@ async def on_startup():
         logger.info("Demo operator ready (user_id=%s)", demo_id)
     except Exception as e:  # noqa: BLE001
         logger.exception("Demo seeding failed: %s", e)
+    try:
+        from services.scheduler import start_scheduler
+        start_scheduler()
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Scheduler start failed: %s", e)
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
+    try:
+        from services.scheduler import shutdown_scheduler
+        shutdown_scheduler()
+    except Exception:
+        pass
     close_client()

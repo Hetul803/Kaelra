@@ -2,13 +2,15 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api, streamChat } from "../lib/api";
+import { useVoice } from "../lib/voice";
+import { useAuth } from "../context/AuthContext";
 import { triggerKaelraRefresh } from "../components/AppShell";
 import { KaelraOrb, ORB_STATUS } from "../components/KaelraOrb";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "../components/ui/sheet";
-import { Mic, Send, History, Plus, Trash2, MessageCircle } from "lucide-react";
+import { Mic, MicOff, Send, History, Plus, Trash2, MessageCircle, Volume2, VolumeX } from "lucide-react";
 
 const SUGGESTIONS = [
   "What’s my day like?",
@@ -33,6 +35,27 @@ export default function Talk() {
   const startedRef = useRef(false);
   const streamTokenRef = useRef(0);
   const abortRef = useRef(null);
+  const voice = useVoice();
+  const { profile } = useAuth();
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const voiceAskedRef = useRef(false);
+  const voicePrefRef = useRef(false);
+
+  // Respect the persisted voice preference once the profile loads
+  useEffect(() => {
+    if (profile && !voicePrefRef.current) {
+      voicePrefRef.current = true;
+      if (profile.voice_enabled === false) setAutoSpeak(false);
+    }
+  }, [profile]);
+
+  // Reflect voice activity in the orb when not streaming text
+  useEffect(() => {
+    if (voice.listening) setOrbState("listening");
+    else if (voice.speaking) setOrbState("speaking");
+    else if (!streaming) setOrbState("idle");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voice.listening, voice.speaking]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -63,6 +86,7 @@ export default function Talk() {
     const controller = new AbortController();
     abortRef.current = controller;
     let firstDelta = true;
+    let replyText = "";
     await streamChat({
       message,
       sessionId,
@@ -73,6 +97,7 @@ export default function Talk() {
           setSessionId(ev.session_id);
         } else if (ev.type === "delta") {
           if (firstDelta) { setOrbState("speaking"); firstDelta = false; }
+          replyText += ev.content;
           setMessages((m) => {
             if (m.length === 0) return m;
             const copy = [...m];
@@ -93,10 +118,14 @@ export default function Talk() {
           setStreaming(false);
           setOrbState("idle");
           loadSessions();
+          if ((autoSpeak || voiceAskedRef.current) && replyText.trim()) {
+            voice.speak(replyText.trim());
+          }
+          voiceAskedRef.current = false;
         }
       },
     });
-  }, [input, sessionId, streaming, loadSessions]);
+  }, [input, sessionId, streaming, loadSessions, autoSpeak, voice]);
 
   // Auto-send the command-bar message passed via navigation
   useEffect(() => {
@@ -143,9 +172,19 @@ export default function Talk() {
   };
 
   const onVoice = () => {
-    setOrbState("listening");
-    toast("Kaelra is voice-ready — live voice is coming soon.", { description: "She’ll speak and listen here." });
-    setTimeout(() => setOrbState((s) => (s === "listening" ? "idle" : s)), 1600);
+    if (voice.listening) { voice.stopListening(); return; }
+    if (voice.speaking) { voice.stopSpeaking(); return; }
+    const started = voice.startListening((transcript) => {
+      if (transcript) {
+        voiceAskedRef.current = true;
+        send(transcript);
+      }
+    });
+    if (!started) {
+      toast("Voice input isn't supported in this browser.", {
+        description: "Kaelra can still speak her replies aloud.",
+      });
+    }
   };
 
   const empty = messages.length === 0;
@@ -158,10 +197,18 @@ export default function Talk() {
           <KaelraOrb size={48} state={orbState} />
           <div>
             <div className="font-heading text-lg leading-none">Kaelra</div>
-            <div className="text-xs text-muted-foreground font-mono-k">{ORB_STATUS[orbState]}</div>
+            <div className="text-xs text-muted-foreground font-mono-k">
+              {ORB_STATUS[orbState]}{voice.provider === "elevenlabs" ? " · premium voice" : ""}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="icon" variant={autoSpeak ? "secondary" : "ghost"} className="h-9 w-9"
+            onClick={() => { if (autoSpeak && voice.speaking) voice.stopSpeaking(); setAutoSpeak((v) => !v); }}
+            data-testid="talk-autospeak-toggle" aria-label="Toggle Kaelra voice"
+            title={autoSpeak ? "Kaelra speaks replies" : "Kaelra is muted"}>
+            {autoSpeak ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </Button>
           <Button size="sm" variant="secondary" className="gap-1.5" onClick={newChat} data-testid="talk-new-chat">
             <Plus size={15} /> New
           </Button>

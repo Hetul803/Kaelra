@@ -1,121 +1,159 @@
-# Kaelra Daily Operator (v0) — Development Plan
+# Kaelra Daily Operator (v0) — Development Plan (Updated)
 
 ## 1) Objectives
-- Deliver a **logged-in full-stack app** (FastAPI + React + MongoDB) for “Kaelra Daily Operator” that feels like a **personal operating system** (not chatbot UI).
-- Prove the **core reasoning engine** works in isolation using **Claude Sonnet 4.5** (`anthropic/claude-sonnet-4-5-20250929`) via **Emergent Universal LLM Key** + `emergentintegrations`, with a **model-provider abstraction**.
-- Implement deterministic system layers: **memory, routines, reminders/notifications (model), action queue w/ approvals, device sync records, audit logs**, and **background daily briefing precompute + cache**.
-- Use **placeholder connectors** (Calendar/Gmail/Drive/Maps) with realistic demo data + clean interfaces for future OAuth.
-- Support **real file upload + AI summarization/extraction** (action items, deadlines, people, key context).
-- Ship all **11 core screens**, demo user “Hetul”, streaming chat, voice-ready UI, and strong privacy controls.
+- Deliver a **logged-in full-stack production-ready app** (FastAPI + React + MongoDB) for **Kaelra**, a **personal AI operator** (not a chatbot wrapper): proactive, warm, deterministic, and safe.
+- Keep a **deterministic system core** (memory, routines, actions, permissions, audit logs, device sync) with an **LLM reasoning layer** (Claude Sonnet 4.5) and a **connector/integration layer**.
+- Support **real Google integrations** (Calendar/Gmail/Drive) via OAuth + token storage, with **graceful fallbacks only when credentials are missing or API calls fail**.
+- Support **real premium voice** via **ElevenLabs TTS** (backend-proxied) with **browser Web Speech API fallback** for TTS and STT.
+- Make Kaelra feel like an OS: after connecting sources, run a **Context Builder** that indexes connected sources, proposes memories, and prepares actions with approval gates.
+- Provide **Skill dashboards** (Jobs, Class, Founder/Aegisure Workspace, Smart Home) that integrate with Action Queue + audit logging and are **real-data-ready**.
 
 ---
 
 ## 2) Implementation Steps
 
 ### Phase 1 — Core POC (Isolation) — ✅ COMPLETE
-**Result:** `test_core.py` passed ALL 3 checks on first run — (1) warm personal daily briefing from structured context, (2) valid JSON action proposals with correct sensitive/approval flags, (3) file summary + deadlines/people/action-items extraction. LLM abstraction (`llm/` package: provider.py + router.py) built with Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`) via Emergent key. Streaming + `complete_json` helpers ready.
-
-### Phase 1 (original) — Core POC (Isolation; do not proceed until SUCCESS)
-**Goal:** validate the make-or-break “Kaelra reasoning engine” loop end-to-end via a single script.
-- Web research (quick) on: best practices for **structured JSON extraction** + **prompting for action proposals** with Claude.
-- Add backend env: `EMERGENT_LLM_KEY=...`; confirm `emergentintegrations` import.
-- Implement **LLM provider abstraction** (interface + Claude provider) with **streaming default**, plus a helper for “structured JSON only” responses.
-- Create `test_core.py` that proves:
-  1) Warm, personal **daily briefing** generated from **structured demo context** (calendar/email/goals/routines/actions/devices).
-  2) **Action suggestions** returned as strict JSON parseable into Action Queue items.
-  3) **File text summarization** + extraction of people/deadlines/action items into structured JSON.
-- Iterate prompts/parsers until:
-  - JSON is consistently valid.
-  - Briefing quality is “instant-ready” and matches Kaelra tone.
-
-**User stories (Phase 1):**
-1. As a user, I want Kaelra to generate a warm daily briefing from my schedule/goals so I instantly know what matters.
-2. As a user, I want Kaelra to propose actions as structured items so I can approve them safely.
-3. As a user, I want Kaelra to summarize a file and extract deadlines so I don’t miss obligations.
-4. As a user, I want the system to cache a briefing so asking later feels instant.
-5. As a user, I want Kaelra’s outputs to be consistent and parseable so the product is reliable.
-
----
+**Result:** `test_core.py` passed ALL 3 checks — (1) warm personal daily briefing from structured context, (2) valid JSON action proposals with correct sensitive/approval flags, (3) file summary + deadlines/people/action-items extraction. LLM abstraction (`llm/` package: provider.py + router.py) built with Claude Sonnet 4.5 (`anthropic/claude-sonnet-4-5-20250929`) via Emergent key. Streaming + `complete_json` helpers ready.
 
 ### Phase 2 — V1 App Development — ✅ COMPLETE
-**Result:** Full Kaelra app shipped. Backend (FastAPI+Mongo): 5 layers — deterministic system (memory/goals/routines/actions/devices/audit/notifications), LLM layer (Claude Sonnet 4.5 via `llm/` abstraction), swappable connector layer (`connectors/` mock Calendar/Gmail/Drive/Maps/News behind BaseConnector), Action Queue with approval gating + side effects, background briefing engine (cached greeting + structured cards). 18 Mongo collections. Demo user **Hetul** seeded on startup. Frontend (React+shadcn): all 11 screens (Auth, Onboarding, Today, Talk, Action Queue, Memory, Files, Routines/Notifications, Connected Accounts, Devices, Settings/Privacy) with premium dark glassmorphism + breathing Kaelra orb, mobile-first + desktop command center, streaming chat (SSE via fetch), voice-ready UI, PWA-friendly shell.
-**Fixes:** craco wds v4→v5 compat shim (onBeforeSetupMiddleware/https), JSX unicode-escape rendering, Talk new-chat-mid-stream race condition (stream-token guard + AbortController), mobile More button z-index above Emergent badge.
-**Testing:** Backend 100% (59/59). Frontend 100% (initial 19/20 → 2 issues fixed → re-test 9/9). 
+**Result:** Full Kaelra app shipped.
+- Backend (FastAPI+Mongo): deterministic system layers + LLM layer + connector abstraction + Action Queue approvals + briefing engine + device sync + audit logging.
+- Frontend (React+shadcn/Tailwind): **11 core screens** (Auth, Onboarding, Today, Talk, Action Queue, Memory, Files, Routines, Connected Accounts, Devices, Settings) + premium dark glass UI + Kaelra orb + SSE streaming chat.
+- Fixes: CRA/CRACO WDS shim, unicode rendering, chat stream race condition, mobile nav z-index.
+- Testing: Backend 59/59, Frontend 9/9.
 
-### Phase 2 (original) — V1 App Development (Build around proven core; delay real OAuth/voice providers)
-**Goal:** create the working product experience with minimal mocks (only for external connectors/voice execution).
-- **Call `design_agent`** for Kaelra UI guidelines (dark elegant, glass cards, gradients, orb presence, motion).
-- Backend foundations (FastAPI + MongoDB):
-  - Collections + models: users, profiles, devices, connected_accounts, memories, goals, routines, places, daily_briefings, conversation_sessions, messages, actions, notifications, files, file_summaries, skill_runs, audit_log, user_feedback.
-  - Seed script: demo user **Hetul** with realistic connected data, files, routines, actions.
-  - Connector interfaces + mock implementations: Calendar/Gmail/Drive/Maps producing realistic data + `skill_runs` logging.
-  - **Briefing engine**: background job + on-demand regeneration; store cached daily briefings; “last updated” metadata.
-  - Action Queue service: create actions from LLM suggestions; enforce **approval for sensitive actions**; audit log every transition.
-  - File service: upload, text extraction (pdf/docx/txt), store, summarize via LLM, store file_summaries + derived actions.
-  - Chat service: streaming SSE; conversation storage; context injection from memory/routines/today snapshot; tool/skill hooks to propose actions.
-  - Device service: register/update device heartbeat; expose sync status.
-- Frontend (React, mobile-first, premium desktop command center):
-  - Implement 11 screens + navigation shell (Today as default).
-  - Today Dashboard cards: briefing, schedule, important emails, reminders, commute placeholder, news, goals, files needing attention, action queue preview, device sync status.
-  - Talk to Kaelra: streaming chat, suggested prompts, voice button (UI only), orb/presence.
-  - Action Queue: approve/reject/edit/snooze; status filters; show “why” + sources.
-  - Memory + Routines/Notifications: CRUD flows, “forget” controls.
-  - Connected Accounts/Devices/Settings: placeholder connector states; permissions + privacy.
+### Phase 3 — Stabilization, UX Polish, and Safety/Privacy Hardening — ✅ COMPLETE
+**Result:** Safety/UX hardening implemented (audit log viewer, export/delete endpoints, improved loading/empty states, approval-first patterns).
 
-**Conclude Phase 2:** run 1 round of end-to-end testing (signup/demo login → dashboard → chat → actions → file upload → summaries → approvals).
-
-**User stories (Phase 2):**
-1. As a user, I want a Today dashboard that shows my day at a glance without chatting.
-2. As a user, I want Kaelra to prepare actions and require my approval before anything sensitive happens.
-3. As a user, I want to upload a syllabus/resume/email PDF and immediately get a summary + extracted action items.
-4. As a user, I want Kaelra to remember preferences and routines and use them in briefings.
-5. As a user, I want to start with a demo account that feels alive and realistic.
+### Phase 4 — Architecture Extensions (interfaces ready; implementations optional for v0) — ✅ COMPLETE
+**Result:** Real-ready architecture landed.
+- **Voice layer** added (ElevenLabs backend route + browser fallback).
+- **Google OAuth** backend service + token storage + real API readers for Calendar/Gmail/Drive.
+- **APScheduler** background engine for routines.
+- **Context Builder** backend implemented with progress steps + indexing + suggested memories.
+- **Four skill modules** added (Jobs, Class, Founder, Smart Home) with endpoints and Action Queue integration.
 
 ---
 
-### Phase 3 — Stabilization, UX Polish, and Safety/Privacy Hardening
-- Add robust validation + error states (empty states, loading states like “Kaelra is checking your day…”).
-- Add audit log viewer (basic) + export/delete data endpoints.
-- Tighten approval rules + permission model (connected accounts, memory categories).
-- Improve briefing caching strategy (TTL, regeneration triggers: new file, new routine, action state changes).
-- Add PWA readiness: manifest, icons, offline-friendly shell for dashboard (data may be stale).
+### Phase 5 — Real Integrations + Skill Frontends (Current Session) — 🚧 IN PROGRESS
+**Context:** User will provide real credentials in secrets panel:
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `ELEVENLABS_API_KEY`
+- `ELEVENLABS_VOICE_ID`
 
-**Conclude Phase 3:** run 1 round of end-to-end testing + regression on POC behaviors.
+**Principle:** Use real integrations when configured; keep graceful fallbacks only if a key is missing or an API call fails.
 
-**User stories (Phase 3):**
-1. As a user, I want to see an audit trail so I trust what Kaelra did and why.
-2. As a user, I want to export or delete my data so I feel in control.
-3. As a user, I want Kaelra to handle failures gracefully (LLM down, file parse fail) without breaking the app.
-4. As a user, I want briefings to load instantly from cache most of the time.
-5. As a user, I want Kaelra’s tone/personality settings to reflect in briefings and chat.
+#### P0 (Highest Priority)
+1) **Real Google OAuth frontend flow (Calendar/Gmail/Drive)**
+   - Update Connected Accounts screen to show a single **“Connect Google”** experience (covers Calendar + Gmail + Drive).
+   - Flow:
+     1. Frontend calls `GET /api/oauth/google/url?redirect_uri=<window.location.origin>/auth/google`
+     2. Redirect user to Google consent screen
+     3. Frontend callback page `/auth/google` parses `code` and calls `POST /api/oauth/google/callback` with `{code, redirect_uri}`
+     4. Update UI connector statuses + show connected email + scopes.
+   - After success: trigger Context Builder (next item).
+
+2) **Wire ElevenLabs TTS (premium voice) + fallback**
+   - Verify `/api/voice/status` reports `provider=elevenlabs` when keys are present.
+   - Verify `/api/voice/tts` returns playable audio; fallback to browser `speechSynthesis` when ElevenLabs fails.
+   - Persist voice preferences in Settings (voice enabled + autospeak preference) and ensure Talk respects these.
+
+3) **Browser Web Speech API fallback for STT/TTS**
+   - Ensure mic input uses Web Speech STT when available; show clear error states when not supported.
+   - Ensure speaking can be stopped/muted and does not break chat streaming.
+
+4) **Context Builder loading/indexing UI (post-Google connection)**
+   - After OAuth success, show progress steps from backend `PROGRESS_STEPS`:
+     - “Give me a moment — I’m learning what matters to you.”
+     - “I’m organizing your context.”
+     - “I’m finding important files, routines, deadlines, and people.”
+     - “I’m preparing your first personal briefing.”
+     - “Your Kaelra context is ready.”
+   - Display summary:
+     - Indexed: calendar events, important emails, drive files
+     - Suggested memories (approve/reject)
+     - Prepared actions (Action Queue)
+     - Sources connected (“I searched the sources you connected” copy)
+
+5) **E2E testing for real connection flow + graceful fallback**
+   - Test with keys present:
+     - Connect Google → Context Builder → Today dashboard reflects real sources
+     - Talk auto-speak uses ElevenLabs
+   - Test with keys missing or API failure:
+     - Google endpoints show configured=false / helpful errors
+     - Voice falls back to browser TTS
+
+#### P1 (Next)
+6) **Talk.js voice UI polish + verification**
+   - Confirm mic toggle, listening state/orb state, auto-speak toggle, stop speaking, and fallback behavior.
+   - Ensure no regressions in streaming chat, history, new-chat cancellation.
+
+7) **Skill Frontends (4 dashboards)**
+   - Build and route pages for:
+     - Jobs / Career (`/jobs`)
+     - Class / School (`/class`)
+     - Founder / Aegisure Workspace (`/founder`)
+     - Smart Home (`/home`)
+   - Each skill UI must include:
+     - Dashboard section/screen (matching design_guidelines)
+     - Prepared actions + Action Queue integration
+     - Demo fallback behavior (already supported by backend)
+     - Real-data-ready architecture (connector abstraction maintained)
+     - Audit logging visibility via existing settings audit trail
+
+8) **Privacy + Context controls in Settings**
+   - Add controls:
+     - Disconnect Google
+     - Pause/resume indexing
+     - Delete indexed data
+     - Review/approve/reject suggested memories
+   - Privacy language:
+     - “I searched the sources you connected.”
+     - Clear source list + disconnect behavior
+
+9) **Onboarding copy updates + full E2E (desktop + mobile)**
+   - Update onboarding and connected-accounts messaging to reflect real integrations and Context Builder.
+   - Run full E2E across desktop + mobile layouts.
 
 ---
 
-### Phase 4 — Architecture Extensions (interfaces ready; implementations optional for v0)
-- Voice layer abstraction (STT/TTS provider interfaces; no provider wired).
-- OAuth-ready connector framework (Google integration stubs: scopes, token store schema, sync jobs) without enabling.
-- Job scheduler abstraction for periodic routines (morning briefing, email checks) with local dev-friendly scheduler.
-
-**User stories (Phase 4):**
-1. As a user, I want voice-first UX to be ready even if voice is “coming soon.”
-2. As a user, I want to connect Google services later without the app needing a rewrite.
-3. As a user, I want routines to run automatically and update my dashboard.
-4. As a user, I want Kaelra to work consistently across devices with clear sync status.
-5. As a user, I want future skills to plug in cleanly (Jobs, Classes, Founder Work).
+## 3) Next Actions (Updated)
+1) Implement **Google OAuth frontend wiring** (Connected Accounts + `/auth/google` callback) and confirm authorized redirect URIs.
+2) Add **Context Builder post-connect loading + summary UI**.
+3) Verify **ElevenLabs** end-to-end in Talk with fallback + preference persistence.
+4) Run **E2E testing** of connection/indexing/briefing and fallback paths.
+5) Build **4 skill dashboards** and add missing routes.
+6) Expand **Settings privacy/context controls** (disconnect/pause/delete/review suggestions).
 
 ---
 
-## 3) Next Actions
-1. Implement LLM abstraction + Claude Sonnet 4.5 wiring via `emergentintegrations` (streaming-first).
-2. Write and run `test_core.py` until all 3 POC checks succeed reliably.
-3. Call `design_agent` and lock UI system + component patterns.
-4. Scaffold backend schema + seed demo user Hetul + mock connectors.
-5. Build Today Dashboard + Talk + Action Queue + Files first (core UX loop), then remaining screens.
+## 4) Success Criteria (Updated)
+- **Integration success:**
+  - Google OAuth connects reliably; Calendar/Gmail/Drive data loads when connected.
+  - Redirect URIs configured correctly; tokens stored; disconnect works.
+- **Voice success:**
+  - ElevenLabs TTS works when keys present; browser fallback works when not.
+  - User can start/stop listening and stop speaking; preferences persist.
+- **Context success:**
+  - After connecting sources, Context Builder shows progress states and produces:
+    - Indexed counts
+    - Suggested memories (reviewable/approvable)
+    - Prepared actions (approval gated)
+- **Product success:**
+  - Today dashboard + briefing incorporate real calendar/email/drive context where available.
+  - Skill dashboards render correctly, prepare actions, and log to audit.
+- **Safety & privacy success:**
+  - Kaelra only references connected sources; users can disconnect and delete indexed data.
+  - Sensitive actions (email drafts/lock controls/etc.) always go through Action Queue approval gates.
 
 ---
 
-## 4) Success Criteria
-- **POC success:** `test_core.py` consistently (a) generates high-quality daily briefing, (b) returns valid JSON action proposals, (c) summarizes files + extracts structured items.
-- **Product success:** demo login shows a fully populated command center; briefing loads instantly from cache; streaming chat works; file upload→summary works; action approvals enforced.
-- **System success:** memories/routines/actions/devices/audit logs persist correctly; connectors are swappable; privacy controls (forget/export/delete) function.
-- **UX success:** feels premium, dark elegant, non-generic; clear states (“prepared actions”, “waiting approval”, “last updated”).
+## Google OAuth Redirect URIs to Register (Google Cloud Console)
+Because the frontend computes `redirect_uri = window.location.origin + "/auth/google"`:
+1) **Emergent preview app:**
+   - `https://kaelra-operator.preview.emergentagent.com/auth/google`
+2) **Future production:**
+   - `https://<your-production-frontend-domain>/auth/google`
+
+> Note on scopes: current backend config uses Drive *read* scope (`drive.readonly`) to support indexing and “find best resume” scenarios. If you want strict least-privilege `drive.file`, we can switch, but it may prevent reading existing resumes not created by Kaelra.

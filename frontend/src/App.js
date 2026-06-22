@@ -7,6 +7,7 @@ import { AppShell } from "./components/AppShell";
 import { KaelraOrb } from "./components/KaelraOrb";
 
 import Auth from "./pages/Auth";
+import GoogleCallback from "./pages/GoogleCallback";
 import Onboarding from "./pages/Onboarding";
 import Today from "./pages/Today";
 import Talk from "./pages/Talk";
@@ -17,6 +18,10 @@ import Routines from "./pages/Routines";
 import ConnectedAccounts from "./pages/ConnectedAccounts";
 import Devices from "./pages/Devices";
 import Settings from "./pages/Settings";
+import Jobs from "./pages/Jobs";
+import ClassSkill from "./pages/ClassSkill";
+import Founder from "./pages/Founder";
+import SmartHome from "./pages/SmartHome";
 
 function FullLoader() {
   return (
@@ -57,12 +62,17 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<AuthRoute />} />
+          <Route path="/auth/google" element={<GoogleCallback />} />
           <Route path="/onboarding" element={<OnboardingRoute />} />
           <Route path="/" element={<Protected title="Today"><Today /></Protected>} />
           <Route path="/talk" element={<Protected title="Talk to Kaelra"><Talk /></Protected>} />
           <Route path="/queue" element={<Protected title="Action Queue"><ActionQueue /></Protected>} />
           <Route path="/memory" element={<Protected title="Memory"><Memory /></Protected>} />
           <Route path="/files" element={<Protected title="Files"><Files /></Protected>} />
+          <Route path="/jobs" element={<Protected title="Jobs & Career"><Jobs /></Protected>} />
+          <Route path="/class" element={<Protected title="Class & School"><ClassSkill /></Protected>} />
+          <Route path="/founder" element={<Protected title="Founder Workspace"><Founder /></Protected>} />
+          <Route path="/home" element={<Protected title="Smart Home"><SmartHome /></Protected>} />
           <Route path="/routines" element={<Protected title="Routines"><Routines /></Protected>} />
           <Route path="/accounts" element={<Protected title="Connected Accounts"><ConnectedAccounts /></Protected>} />
           <Route path="/devices" element={<Protected title="Devices"><Devices /></Protected>} />
