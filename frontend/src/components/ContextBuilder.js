@@ -59,6 +59,15 @@ export function ContextBuilder({ onDone, doneLabel = "Enter Kaelra" }) {
   const done = !!(summary || error);
   const indexed = summary?.indexed || { events: 0, emails: 0, files: 0 };
   const sources = summary?.sources || [];
+  const pct = done ? 100 : Math.min(90, Math.round(((stepIdx + 1) / STEPS.length) * 100));
+
+  // Auto-advance into Kaelra once indexing succeeds (no manual refresh needed).
+  useEffect(() => {
+    if (summary && !error && onDone) {
+      const t = setTimeout(() => onDone(), 2400);
+      return () => clearTimeout(t);
+    }
+  }, [summary, error, onDone]);
 
   const stat = (icon, value, label) => (
     <div className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 px-3 py-3">
@@ -77,12 +86,11 @@ export function ContextBuilder({ onDone, doneLabel = "Enter Kaelra" }) {
           <p key={stepIdx} className="font-heading text-lg kaelra-fade-up" data-testid="context-builder-step">
             {STEPS[stepIdx]}
           </p>
-          <div className="mt-4 flex items-center justify-center gap-1.5">
-            {STEPS.map((_, idx) => (
-              <span key={idx}
-                className={`h-1.5 rounded-full transition-all ${idx <= stepIdx ? "w-6 bg-[hsl(var(--primary))]" : "w-1.5 bg-white/15"}`} />
-            ))}
+          <div className="mx-auto mt-5 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-[hsl(var(--primary))] transition-[width] duration-700 ease-out"
+              style={{ width: `${pct}%` }} data-testid="context-builder-progress" />
           </div>
+          <p className="mt-2 font-mono-k text-[11px] text-muted-foreground">{pct}% — indexing your connected sources</p>
         </div>
       )}
 

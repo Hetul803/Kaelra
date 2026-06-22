@@ -78,6 +78,14 @@ async def build(user: dict) -> dict:
         await db.indexed_items.insert_many([{"id": new_id(), "user_id": user_id, "created_at": now_iso(), **it}
                                             for it in index_items])
 
+    # Clear any STALE context the user hasn't acted on yet, so a (re)build always
+    # reflects the *current* connected sources — never leftover/mock-era content.
+    await db.suggested_memories.delete_many({"user_id": user_id, "status": "suggested"})
+    await db.actions.delete_many({
+        "user_id": user_id, "status": "pending",
+        "origin": {"$in": ["daily_briefing", "context_builder", "context"]},
+    })
+
     # Ask the LLM to PROPOSE memories (user approves later) + a couple actions
     suggested = await _suggest_memories(profile, signal, user_id)
     actions = await create_actions(user_id, [
@@ -86,11 +94,21 @@ async def build(user: dict) -> dict:
          "why": "So nothing important slips through.", "source": "Context Builder", "sensitive": False},
     ] if important_docs else [], origin="context_builder")
 
+    # Regenerate today's briefing from the REAL, freshly-indexed context so the
+    # dashboard greeting + prepared actions reflect what Kaelra can actually see.
+    briefing_actions = 0
+    try:
+        from services.briefing import generate as _gen_briefing
+        bdoc = await _gen_briefing(user, force=True)
+        briefing_actions = (bdoc or {}).get("actions_prepared", 0)
+    except Exception:
+        pass
+
     summary = {
         "indexed": indexed,
         "important_docs": important_docs,
         "suggested_memories": len(suggested),
-        "actions_prepared": len(actions),
+        "actions_prepared": len(actions) + briefing_actions,
         "sources": sorted(connected),
         "steps": PROGRESS_STEPS,
     }

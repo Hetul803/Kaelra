@@ -1,30 +1,26 @@
 [
   {
-    "content": "Build skills, ContextBuilder, GoogleCallback, ConnectedAccounts, Settings, frictionless onboarding",
+    "content": "Fix Google OAuth PKCE (Missing code verifier)",
     "status": "completed"
   },
   {
-    "content": "Real secrets live: ElevenLabs TTS verified, Google configured + OAuth URL correct",
+    "content": "Stop mock data for real accounts (gate connectors + seeds to demo; keep demo alive)",
     "status": "completed"
   },
   {
-    "content": "Fix Google OAuth 'Missing code verifier' (disable PKCE for confidential web client)",
+    "content": "Fix stale mock briefing/actions: Context Builder clears stale + regenerates briefing from REAL data on every build",
     "status": "completed"
   },
   {
-    "content": "Stop mock data for real accounts: gate provisioning + connectors + skill seeds to demo-only; keep demo alive",
+    "content": "Add Context Builder progress bar + auto-advance to dashboard (no refresh)",
     "status": "completed"
   },
   {
-    "content": "Verify clean new-account UI (Today empty states + skills) renders well via screenshot",
+    "content": "One-time rebuild for user account -> verified real briefing + real actions",
+    "status": "completed"
+  },
+  {
+    "content": "ALIGN with user on phased Kaelra-first redesign (declutter/skill auto-detect, voice intro onboarding, notification-driven + Kaelra speaks, multi-account, continuous learning)",
     "status": "in_progress"
-  },
-  {
-    "content": "USER: add Google email as Test user (consent=External, Testing) and retry Connect Google (PKCE now fixed)",
-    "status": "pending"
-  },
-  {
-    "content": "After user connects: verify real Calendar/Gmail/Drive + Context Builder, then full E2E",
-    "status": "pending"
   }
 ]
