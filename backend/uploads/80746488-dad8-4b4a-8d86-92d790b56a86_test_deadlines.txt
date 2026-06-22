@@ -1,0 +1,12 @@
+Project Deadline Document
+        
+Assignment 1: Due August 25, 2025
+Contact: John Doe (john@example.com)
+
+Assignment 2: Due September 1, 2025
+Contact: Jane Smith (jane@example.com)
+
+Key action items:
+- Review code by August 20
+- Submit final report by August 30
+- Schedule meeting with team
