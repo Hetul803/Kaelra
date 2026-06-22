@@ -1,34 +1,18 @@
 [
   {
-    "content": "Phase 1: Set up EMERGENT_LLM_KEY, build LLM provider abstraction (Claude Sonnet 4.5)",
+    "content": "Phase 1: Core POC (LLM abstraction + test_core.py all passed)",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Write test_core.py proving briefing generation + structured action JSON + file summarization",
+    "content": "Phase 2: Design guidelines + backend system + 11 frontend screens",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Run & fix test_core.py until all 3 POC checks pass reliably",
+    "content": "Phase 2: Backend testing via testing_agent_v3 (100% 59/59 passed)",
     "status": "completed"
-  },
-  {
-    "content": "Phase 2: Get design guidelines from design_agent",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Backend - schema/models, services, connectors, auth+demo, seed Hetul",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Frontend - 11 screens + Kaelra orb shell (fixed wds v4->v5 craco shim, unicode escapes)",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Backend testing via testing_agent_v3 + fix all bugs",
-    "status": "in_progress"
   },
   {
     "content": "Phase 2: Frontend E2E testing via testing_agent_v3 + fix all bugs",
-    "status": "pending"
+    "status": "in_progress"
   }
 ]
