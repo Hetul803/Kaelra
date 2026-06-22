@@ -1,34 +1,30 @@
 [
   {
-    "content": "Build ContextBuilder + GoogleCallback + 4 skill pages + routes",
+    "content": "Build skills, ContextBuilder, GoogleCallback, ConnectedAccounts, Settings privacy, routes",
     "status": "completed"
   },
   {
-    "content": "Rewrite ConnectedAccounts.js with real Google OAuth hero + Context rebuild",
+    "content": "Add real secrets, restart backend, verify ElevenLabs TTS (real) + Google configured + OAuth URL",
     "status": "completed"
   },
   {
-    "content": "Add Context & Privacy controls to Settings.js",
+    "content": "Redesign onboarding to be frictionless (lead with Connect Google; Kaelra infers the rest)",
     "status": "completed"
   },
   {
-    "content": "Update Onboarding copy + Talk auto-speak preference wiring",
+    "content": "Diagnose Google 403: confirmed app-side never returns 403 → it's Google consent-screen Test-user/External config",
     "status": "completed"
   },
   {
-    "content": "Frontend compile check + screenshots of all new screens",
-    "status": "completed"
-  },
-  {
-    "content": "E2E testing in mock mode (backend 99/99, frontend all pass; fixed StatusPill import)",
-    "status": "completed"
-  },
-  {
-    "content": "USER ACTION: add Google + ElevenLabs secrets + register redirect URI + add Google test user",
+    "content": "USER: add your Google email as a Test user (consent screen = External, Testing) and retry Connect Google",
     "status": "in_progress"
   },
   {
-    "content": "After secrets added: restart backend, verify real Google connect + ElevenLabs voice end-to-end",
+    "content": "After user connects: verify real Calendar fetch, Gmail summarization, Drive read-only indexing, Context Builder, then full E2E",
+    "status": "pending"
+  },
+  {
+    "content": "(Next) Continuous context: daily auto re-index of new emails/events/docs + deeper preference learning",
     "status": "pending"
   }
 ]
