@@ -12,19 +12,23 @@
     "status": "completed"
   },
   {
-    "content": "Update Onboarding final-step copy + Talk auto-speak preference wiring",
+    "content": "Update Onboarding copy + Talk auto-speak preference wiring",
     "status": "completed"
   },
   {
-    "content": "Verify frontend compiles (esbuild) + screenshot key screens",
+    "content": "Frontend compile check + screenshots of all new screens",
     "status": "completed"
   },
   {
-    "content": "E2E testing: backend (skills/context/voice/google) + frontend (skill pages, connect flow, settings) in mock mode",
+    "content": "E2E testing in mock mode (backend 99/99, frontend all pass; fixed StatusPill import)",
+    "status": "completed"
+  },
+  {
+    "content": "USER ACTION: add Google + ElevenLabs secrets + register redirect URI + add Google test user",
     "status": "in_progress"
   },
   {
-    "content": "User: add GOOGLE_CLIENT_ID/SECRET + ELEVENLABS keys to secrets panel & register redirect URI; then restart + verify real integrations",
+    "content": "After secrets added: restart backend, verify real Google connect + ElevenLabs voice end-to-end",
     "status": "pending"
   }
 ]
