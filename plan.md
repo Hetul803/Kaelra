@@ -37,7 +37,12 @@
 
 ---
 
-### Phase 2 — V1 App Development (Build around proven core; delay real OAuth/voice providers)
+### Phase 2 — V1 App Development — ✅ COMPLETE
+**Result:** Full Kaelra app shipped. Backend (FastAPI+Mongo): 5 layers — deterministic system (memory/goals/routines/actions/devices/audit/notifications), LLM layer (Claude Sonnet 4.5 via `llm/` abstraction), swappable connector layer (`connectors/` mock Calendar/Gmail/Drive/Maps/News behind BaseConnector), Action Queue with approval gating + side effects, background briefing engine (cached greeting + structured cards). 18 Mongo collections. Demo user **Hetul** seeded on startup. Frontend (React+shadcn): all 11 screens (Auth, Onboarding, Today, Talk, Action Queue, Memory, Files, Routines/Notifications, Connected Accounts, Devices, Settings/Privacy) with premium dark glassmorphism + breathing Kaelra orb, mobile-first + desktop command center, streaming chat (SSE via fetch), voice-ready UI, PWA-friendly shell.
+**Fixes:** craco wds v4→v5 compat shim (onBeforeSetupMiddleware/https), JSX unicode-escape rendering, Talk new-chat-mid-stream race condition (stream-token guard + AbortController), mobile More button z-index above Emergent badge.
+**Testing:** Backend 100% (59/59). Frontend 100% (initial 19/20 → 2 issues fixed → re-test 9/9). 
+
+### Phase 2 (original) — V1 App Development (Build around proven core; delay real OAuth/voice providers)
 **Goal:** create the working product experience with minimal mocks (only for external connectors/voice execution).
 - **Call `design_agent`** for Kaelra UI guidelines (dark elegant, glass cards, gradients, orb presence, motion).
 - Backend foundations (FastAPI + MongoDB):
