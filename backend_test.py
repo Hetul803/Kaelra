@@ -1094,6 +1094,138 @@ Key action items:
             if success and 'memories' in memories and len(memories['memories']) == 0:
                 self.log("✅ Memories wiped after delete", "PASS")
     
+    # ==================== SKILLS: RELEVANT (NEW) ====================
+    def test_skills_relevant(self):
+        """Test skill auto-detection endpoint"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING SKILLS: RELEVANT (AUTO-DETECTION)", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Test demo user (should get all 4 skills)
+        success, response = self.run_test(
+            "Get relevant skills (demo user)",
+            "GET",
+            "skills/relevant",
+            200,
+            token=self.demo_token
+        )
+        
+        if success:
+            skills = response.get('skills', [])
+            skill_keys = [s.get('key') for s in skills]
+            expected_keys = ['jobs', 'class', 'founder', 'home']
+            
+            if len(skills) == 4 and all(k in skill_keys for k in expected_keys):
+                self.log(f"✅ Demo user gets all 4 skills: {skill_keys}", "PASS")
+            else:
+                self.log(f"❌ Demo user should get 4 skills, got: {skill_keys}", "FAIL")
+        
+        # Test fresh user (should get empty [])
+        if self.throwaway_token:
+            success, response = self.run_test(
+                "Get relevant skills (fresh user)",
+                "GET",
+                "skills/relevant",
+                200,
+                token=self.throwaway_token
+            )
+            
+            if success:
+                skills = response.get('skills', [])
+                if len(skills) == 0:
+                    self.log(f"✅ Fresh user gets empty skills: []", "PASS")
+                else:
+                    self.log(f"❌ Fresh user should get [], got: {[s.get('key') for s in skills]}", "FAIL")
+    
+    # ==================== FEED (NEW) ====================
+    def test_feed(self):
+        """Test proactive feed endpoint"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING FEED (PROACTIVE)", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Test demo user feed (should have greeting + items)
+        success, response = self.run_test(
+            "Get feed (demo user)",
+            "GET",
+            "feed",
+            200,
+            token=self.demo_token
+        )
+        
+        if success:
+            required_keys = ['name', 'greeting', 'items']
+            missing = [k for k in required_keys if k not in response]
+            if not missing:
+                self.log(f"✅ Feed has all required keys: {required_keys}", "PASS")
+            else:
+                self.log(f"❌ Feed missing keys: {missing}", "FAIL")
+            
+            # Check items structure
+            items = response.get('items', [])
+            if len(items) > 0:
+                self.log(f"✅ Demo user feed has {len(items)} items", "PASS")
+                
+                # Check first item structure
+                item = items[0]
+                item_keys = ['id', 'kind', 'title', 'subtitle', 'narration', 'card']
+                missing_item_keys = [k for k in item_keys if k not in item]
+                if not missing_item_keys:
+                    self.log(f"✅ Feed item has correct structure", "PASS")
+                else:
+                    self.log(f"❌ Feed item missing keys: {missing_item_keys}", "FAIL")
+            
+            # Check greeting
+            if response.get('greeting'):
+                self.log(f"✅ Demo user has greeting: {response['greeting'][:80]}...", "PASS")
+        
+        # Test fresh user feed (should have items:[] and greeting may be null)
+        if self.throwaway_token:
+            success, response = self.run_test(
+                "Get feed (fresh user, before briefing)",
+                "GET",
+                "feed",
+                200,
+                token=self.throwaway_token
+            )
+            
+            if success:
+                items = response.get('items', [])
+                if len(items) == 0:
+                    self.log(f"✅ Fresh user feed is empty: items=[]", "PASS")
+                else:
+                    self.log(f"❌ Fresh user should have empty feed, got {len(items)} items", "FAIL")
+                
+                # Greeting may be null for fresh user
+                if not response.get('greeting'):
+                    self.log(f"✅ Fresh user has no greeting (expected before briefing)", "PASS")
+            
+            # Now generate briefing for fresh user
+            self.log("Generating briefing for fresh user (may take ~30s)...", "INFO")
+            success, briefing_response = self.run_test(
+                "Generate briefing (fresh user)",
+                "POST",
+                "briefing",
+                200,
+                token=self.throwaway_token
+            )
+            
+            if success:
+                # Now check feed again (should have greeting)
+                success, response = self.run_test(
+                    "Get feed (fresh user, after briefing)",
+                    "GET",
+                    "feed",
+                    200,
+                    token=self.throwaway_token
+                )
+                
+                if success:
+                    if response.get('greeting'):
+                        self.log(f"✅ Fresh user has greeting after briefing: {response['greeting'][:80]}...", "PASS")
+                    else:
+                        self.log(f"❌ Fresh user should have greeting after briefing", "FAIL")
+    
     # ==================== SKILLS: JOBS TESTS ====================
     def test_skills_jobs(self):
         """Test Jobs skill endpoints"""
@@ -1704,16 +1836,20 @@ Key action items:
             self.test_audit()
             self.test_privacy()
             
-            # NEW: Skills tests
+            # NEW: Iteration 5 - Skills relevant + Feed
+            self.test_skills_relevant()
+            self.test_feed()
+            
+            # Skills tests
             self.test_skills_jobs()
             self.test_skills_class()
             self.test_skills_founder()
             self.test_skills_smarthome()
             
-            # NEW: Context Builder tests
+            # Context Builder tests
             self.test_context_builder()
             
-            # NEW: Voice and Google OAuth fallback tests
+            # Voice and Google OAuth fallback tests
             self.test_voice_fallback()
             self.test_google_oauth()
             

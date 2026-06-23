@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
+import { useVoice } from "../lib/voice";
 import { KaelraOrb } from "../components/KaelraOrb";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import {
-  Calendar, Mail, FolderOpen, ShieldCheck, ArrowRight, Sparkles, Lock,
+  Calendar, Mail, FolderOpen, ShieldCheck, ArrowRight, Sparkles, Lock, Volume2, VolumeX,
 } from "lucide-react";
+
+const INTRO = "Hi, I'm Kaelra. Connect your Google and I'll learn what matters to you — your schedule, the people and deadlines that matter, and what's urgent. You won't have to explain yourself.";
 
 const LEARNS = [
   { icon: Calendar, label: "Calendar", note: "your schedule & leave-times" },
@@ -20,8 +23,27 @@ const LEARNS = [
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const voice = useVoice();
   const [callMe, setCallMe] = useState(user?.name || "");
   const [busy, setBusy] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const introRef = useRef(false);
+
+  // Kaelra introduces herself out loud (browser/ElevenLabs); written text always shown.
+  useEffect(() => {
+    if (introRef.current || muted) return;
+    introRef.current = true;
+    const t = setTimeout(() => voice.speak && voice.speak(INTRO), 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    if (next) voice.stopSpeaking();
+    else voice.speak(INTRO);
+  };
 
   const saveMinimal = async () => {
     const name = (user?.name || callMe || "there").trim();
@@ -30,6 +52,7 @@ export default function Onboarding() {
 
   const connectGoogle = async () => {
     if (!callMe.trim()) { toast.error("Tell me what to call you first."); return; }
+    voice.stopSpeaking();
     setBusy(true);
     try {
       await saveMinimal();
@@ -50,6 +73,7 @@ export default function Onboarding() {
 
   const continueDemo = async () => {
     if (!callMe.trim()) { toast.error("Tell me what to call you first."); return; }
+    voice.stopSpeaking();
     setBusy(true);
     try {
       await saveMinimal();
@@ -67,12 +91,16 @@ export default function Onboarding() {
       <div className="w-full max-w-lg">
         <div className="glass rounded-2xl p-7 kaelra-fade-up">
           <div className="flex flex-col items-center text-center">
-            <KaelraOrb size={92} state="idle" />
+            <KaelraOrb size={92} state={voice.speaking ? "speaking" : "idle"} />
             <h1 className="mt-5 font-heading text-2xl" data-testid="onboarding-step-title">Hi, I'm Kaelra.</h1>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Connect your Google and I'll learn what matters to you — your schedule, the people and
               deadlines that matter, what's urgent. You won't have to explain yourself.
             </p>
+            <Button variant="ghost" size="sm" className="mt-3 gap-1.5 text-xs text-muted-foreground"
+              onClick={toggleMute} data-testid="onboarding-mute-toggle">
+              {muted ? <><VolumeX size={14} /> Muted — tap to hear me</> : <><Volume2 size={14} className="text-[hsl(var(--primary))]" /> {voice.speaking ? "Speaking…" : "Replay intro"}</>}
+            </Button>
           </div>
 
           {/* What she'll learn */}

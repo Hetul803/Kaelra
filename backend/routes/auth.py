@@ -80,7 +80,7 @@ async def save_onboarding(req: OnboardingRequest, user: dict = Depends(get_curre
         "notifications_enabled": req.notifications_enabled,
         "device_sync": req.device_sync,
         "proactive_briefing": req.proactive_briefing,
-        "voice_enabled": False,
+        "voice_enabled": True,
         "approval_rules": {"emails": True, "jobs": True, "calendar": True, "files": True, "purchases": True},
         "updated_at": now_iso(),
     }

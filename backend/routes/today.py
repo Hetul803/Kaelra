@@ -8,6 +8,7 @@ from auth import get_current_user
 from utils import new_id, now_iso, clean_doc, clean_docs
 from services.context import build_today_context, build_card_payload
 from services.briefing import generate, get_cached
+from services.feed import build_feed
 from services.actions import counts
 from services.devices import heartbeat, list_devices
 from services.audit import log_event
@@ -36,6 +37,11 @@ async def make_briefing(force: bool = False, user: dict = Depends(get_current_us
     briefing = await generate(user, force=force)
     action_counts = await counts(user["id"])
     return {"briefing": briefing, "action_counts": action_counts}
+
+
+@router.get("/feed")
+async def proactive_feed(user: dict = Depends(get_current_user)):
+    return await build_feed(user)
 
 
 # ----------------------------- Devices -----------------------------

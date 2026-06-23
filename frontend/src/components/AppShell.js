@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid, MessageCircle, ListChecks, Brain, FolderOpen,
   Bell, Plug, MonitorSmartphone, Settings as SettingsIcon,
-  Menu, LogOut, ChevronRight, Briefcase, GraduationCap, Rocket, Home,
+  Menu, LogOut, ChevronRight, Briefcase, GraduationCap, Rocket, Home, Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -13,25 +13,30 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Button } from "./ui/button";
 
 const PRIMARY_NAV = [
-  { to: "/", label: "Today", icon: LayoutGrid, end: true },
-  { to: "/talk", label: "Talk to Kaelra", icon: MessageCircle },
+  { to: "/", label: "Kaelra", icon: Sparkles, end: true },
   { to: "/queue", label: "Action Queue", icon: ListChecks, badgeKey: "pending" },
   { to: "/memory", label: "Memory", icon: Brain },
   { to: "/files", label: "Files", icon: FolderOpen },
 ];
-const SKILLS_NAV = [
-  { to: "/jobs", label: "Jobs & Career", icon: Briefcase },
-  { to: "/class", label: "Class & School", icon: GraduationCap },
-  { to: "/founder", label: "Founder Workspace", icon: Rocket },
-  { to: "/home", label: "Smart Home", icon: Home },
-];
-const SECONDARY_NAV = [
+const ALL_SKILLS = {
+  jobs: { to: "/jobs", label: "Jobs & Career", icon: Briefcase },
+  class: { to: "/class", label: "Class & School", icon: GraduationCap },
+  founder: { to: "/founder", label: "Founder Workspace", icon: Rocket },
+  home: { to: "/home", label: "Smart Home", icon: Home },
+};
+const SKILL_ORDER = ["jobs", "class", "founder", "home"];
+const CONTROL_NAV = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { to: "/routines", label: "Routines", icon: Bell },
   { to: "/accounts", label: "Connected Accounts", icon: Plug },
   { to: "/devices", label: "Devices", icon: MonitorSmartphone },
   { to: "/settings", label: "Settings & Privacy", icon: SettingsIcon },
 ];
-const MOBILE_TABS = PRIMARY_NAV.slice(0, 4);
+const MOBILE_TABS = [
+  { to: "/", label: "Kaelra", icon: Sparkles, end: true },
+  { to: "/queue", label: "Queue", icon: ListChecks, badgeKey: "pending" },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
+];
 
 // ---- Lightweight cross-screen status sync ----
 export function triggerKaelraRefresh() {
@@ -68,6 +73,8 @@ function NavItem({ item, counts, onClick }) {
 export function AppShell({ children, title }) {
   const { user, profile, logout } = useAuth();
   const [counts, setCounts] = useState({ pending: 0 });
+  const [relevantSkills, setRelevantSkills] = useState([]);
+  const [showAllSkills, setShowAllSkills] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,6 +83,10 @@ export function AppShell({ children, title }) {
     try {
       const { data } = await api.get("/actions", { params: { status: "pending" } });
       setCounts({ pending: data.length });
+    } catch (e) { /* ignore */ }
+    try {
+      const { data } = await api.get("/skills/relevant");
+      setRelevantSkills((data.skills || []).map((s) => s.key));
     } catch (e) { /* ignore */ }
   }, []);
 
@@ -88,6 +99,9 @@ export function AppShell({ children, title }) {
   }, [refresh]);
 
   const name = profile?.call_me || user?.name || "there";
+  const skillKeys = showAllSkills ? SKILL_ORDER : relevantSkills.filter((k) => ALL_SKILLS[k]);
+  const skillItems = skillKeys.map((k) => ALL_SKILLS[k]).filter(Boolean);
+  const hasHiddenSkills = relevantSkills.length < SKILL_ORDER.length;
 
   return (
     <div className="kaelra-app-bg min-h-screen text-foreground">
@@ -104,10 +118,22 @@ export function AppShell({ children, title }) {
 
           <nav className="mt-2 flex flex-1 min-h-0 flex-col gap-1 overflow-y-auto pr-1">
             {PRIMARY_NAV.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
-            <div className="px-3 pb-1 pt-3 kaelra-kicker">Skills</div>
-            {SKILLS_NAV.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
+
+            {(skillItems.length > 0 || hasHiddenSkills) && (
+              <div className="px-3 pb-1 pt-3 kaelra-kicker">Skills</div>
+            )}
+            {skillItems.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
+            {hasHiddenSkills && (
+              <button onClick={() => setShowAllSkills((v) => !v)} data-testid="nav-toggle-skills"
+                className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
+                <ChevronRight size={14} className={`transition-transform ${showAllSkills ? "rotate-90" : ""}`} />
+                {showAllSkills ? "Show fewer" : "Explore all skills"}
+              </button>
+            )}
+
             <div className="my-2 h-px bg-white/5" />
-            {SECONDARY_NAV.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
+            <div className="px-3 pb-1 kaelra-kicker">Control panel</div>
+            {CONTROL_NAV.map((item) => <NavItem key={item.to} item={item} counts={counts} />)}
           </nav>
 
           <div className="mt-auto">
@@ -140,7 +166,7 @@ export function AppShell({ children, title }) {
               </div>
               <div className="hidden lg:block min-w-[120px]">
                 <div className="kaelra-kicker">Kaelra</div>
-                <div className="font-heading text-lg leading-none">{title || "Today"}</div>
+                <div className="font-heading text-lg leading-none">{title || "Kaelra"}</div>
               </div>
               <div className="mx-auto w-full max-w-xl">
                 <CommandBar compact />
@@ -202,7 +228,7 @@ export function AppShell({ children, title }) {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            {[...PRIMARY_NAV, ...SKILLS_NAV, ...SECONDARY_NAV].map((item) => (
+            {[...PRIMARY_NAV, ...SKILL_ORDER.map((k) => ALL_SKILLS[k]), ...CONTROL_NAV].map((item) => (
               <NavItem key={item.to} item={item} counts={counts} onClick={() => setMoreOpen(false)} />
             ))}
           </div>

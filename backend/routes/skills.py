@@ -9,8 +9,14 @@ from services.skills import jobs as jobs_skill
 from services.skills import class_skill
 from services.skills import founder as founder_skill
 from services.skills import smarthome
+from services.skills import detect as skill_detect
 
 router = APIRouter()
+
+
+@router.get("/skills/relevant")
+async def skills_relevant(user: dict = Depends(get_current_user)):
+    return {"skills": await skill_detect.relevant_skills(user["id"])}
 
 
 async def _profile(user):

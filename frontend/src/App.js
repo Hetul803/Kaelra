@@ -9,6 +9,7 @@ import { KaelraOrb } from "./components/KaelraOrb";
 import Auth from "./pages/Auth";
 import GoogleCallback from "./pages/GoogleCallback";
 import Onboarding from "./pages/Onboarding";
+import Kaelra from "./pages/Kaelra";
 import Today from "./pages/Today";
 import Talk from "./pages/Talk";
 import ActionQueue from "./pages/ActionQueue";
@@ -64,7 +65,8 @@ function App() {
           <Route path="/auth" element={<AuthRoute />} />
           <Route path="/auth/google" element={<GoogleCallback />} />
           <Route path="/onboarding" element={<OnboardingRoute />} />
-          <Route path="/" element={<Protected title="Today"><Today /></Protected>} />
+          <Route path="/" element={<Protected title="Kaelra"><Kaelra /></Protected>} />
+          <Route path="/dashboard" element={<Protected title="Dashboard"><Today /></Protected>} />
           <Route path="/talk" element={<Protected title="Talk to Kaelra"><Talk /></Protected>} />
           <Route path="/queue" element={<Protected title="Action Queue"><ActionQueue /></Protected>} />
           <Route path="/memory" element={<Protected title="Memory"><Memory /></Protected>} />

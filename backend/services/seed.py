@@ -59,6 +59,8 @@ async def ensure_demo_alive():
         {"user_id": demo["id"], "provider": {"$in": list(_DEMO_ONLY_DATA_PROVIDERS)}},
         {"$set": {"status": "connected", "connected_at": now_iso()}},
     )
+    # Keep the demo voice-on so Kaelra speaks her briefing on the demo home.
+    await db.profiles.update_one({"user_id": demo["id"]}, {"$set": {"voice_enabled": True}})
 
 
 async def _insert_many(coll, user_id, items, base):
@@ -100,7 +102,7 @@ async def seed_demo():
         "notifications_enabled": True,
         "device_sync": True,
         "proactive_briefing": True,
-        "voice_enabled": False,
+        "voice_enabled": True,
         "approval_rules": {"emails": True, "jobs": True, "calendar": True, "files": True, "purchases": True},
         "created_at": now_iso(),
     })
