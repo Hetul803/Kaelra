@@ -1,26 +1,30 @@
 [
   {
-    "content": "Fix Google OAuth PKCE (Missing code verifier)",
+    "content": "Fix Google OAuth PKCE + stop mock for real accounts + regenerate real briefing/actions",
     "status": "completed"
   },
   {
-    "content": "Stop mock data for real accounts (gate connectors + seeds to demo; keep demo alive)",
+    "content": "Context Builder progress bar + auto-advance",
     "status": "completed"
   },
   {
-    "content": "Fix stale mock briefing/actions: Context Builder clears stale + regenerates briefing from REAL data on every build",
+    "content": "Phase 1 — Declutter + skill auto-detection (/api/skills/relevant) + Kaelra-as-home; dashboard -> /dashboard control panel",
     "status": "completed"
   },
   {
-    "content": "Add Context Builder progress bar + auto-advance to dashboard (no refresh)",
+    "content": "Phase 2 — Kaelra-first onboarding with spoken intro (voice defaults ON)",
     "status": "completed"
   },
   {
-    "content": "One-time rebuild for user account -> verified real briefing + real actions",
+    "content": "Phase 3 — Proactive feed (/api/feed) + 'Kaelra speaks' view (auto-speak + card; muted writes first)",
     "status": "completed"
   },
   {
-    "content": "ALIGN with user on phased Kaelra-first redesign (declutter/skill auto-detect, voice intro onboarding, notification-driven + Kaelra speaks, multi-account, continuous learning)",
-    "status": "in_progress"
+    "content": "E2E test redesign (backend 104/105; frontend core flows pass) + verify clean fresh account",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 4 (deferred) — multi-account Google + continuous background re-index",
+    "status": "pending"
   }
 ]
