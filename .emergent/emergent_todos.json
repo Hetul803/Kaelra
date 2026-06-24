@@ -1,30 +1,54 @@
 [
   {
-    "content": "Fix Google OAuth PKCE + stop mock for real accounts + regenerate real briefing/actions",
-    "status": "completed"
+    "content": "Backend: config env vars (LinkedIn Jobs API + VAPID/push contact)",
+    "status": "in_progress"
   },
   {
-    "content": "Context Builder progress bar + auto-advance",
-    "status": "completed"
+    "content": "Backend: services/push.py (VAPID keygen, subscriptions, send_push) + services/notify.py shared notifier",
+    "status": "pending"
   },
   {
-    "content": "Phase 1 — Declutter + skill auto-detection (/api/skills/relevant) + Kaelra-as-home; dashboard -> /dashboard control panel",
-    "status": "completed"
+    "content": "Backend: routes/push.py (public-key, subscribe, unsubscribe, test) + mount in server.py",
+    "status": "pending"
   },
   {
-    "content": "Phase 2 — Kaelra-first onboarding with spoken intro (voice defaults ON)",
-    "status": "completed"
+    "content": "Backend: services/reindex.py (baseline-first continuous re-index) + scheduler job wiring",
+    "status": "pending"
   },
   {
-    "content": "Phase 3 — Proactive feed (/api/feed) + 'Kaelra speaks' view (auto-speak + card; muted writes first)",
-    "status": "completed"
+    "content": "Backend: services/skills/jobs_provider.py (LinkedIn/JSearch + mock) + jobs.py search/save + routes",
+    "status": "pending"
   },
   {
-    "content": "E2E test redesign (backend 104/105; frontend core flows pass) + verify clean fresh account",
-    "status": "completed"
+    "content": "Backend: wire scheduler._notify -> shared notifier (push), server startup vapid init",
+    "status": "pending"
   },
   {
-    "content": "Phase 4 (deferred) — multi-account Google + continuous background re-index",
+    "content": "Test backend (testing_agent): push, reindex, jobs search/fallback, clean-slate gating",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: public/sw.js service worker + src/lib/push.js helper",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: Settings push notifications section (enable/disable/test)",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: Jobs page search UI (keywords/location, results, save, sample banner)",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend compile (esbuild) + screenshots verification",
+    "status": "pending"
+  },
+  {
+    "content": "Full E2E test (testing_agent) + fix bugs",
+    "status": "pending"
+  },
+  {
+    "content": "Wipe all non-demo accounts (clean-slate script) for fresh user test",
     "status": "pending"
   }
 ]
