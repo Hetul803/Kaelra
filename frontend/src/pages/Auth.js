@@ -87,7 +87,7 @@ export default function Auth() {
                 <div>
                   <Label htmlFor="name">Your name</Label>
                   <Input id="name" data-testid="auth-name-input" value={name} onChange={(e) => setName(e.target.value)}
-                    placeholder="Hetul" className="mt-1 bg-white/5 border-white/10" />
+                    placeholder="Your first name" className="mt-1 bg-white/5 border-white/10" />
                 </div>
               )}
               <div>

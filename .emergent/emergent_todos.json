@@ -8,19 +8,11 @@
     "status": "completed"
   },
   {
-    "content": "Design: 'Entity' Kaelra Home blueprint",
+    "content": "Design + Entity Home redesign (living orb, conversation-first, ambient, learned stream)",
     "status": "completed"
   },
   {
-    "content": "Frontend: public/sw.js + src/lib/push.js helper",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: Entity Home redesign (living orb, conversation-first, ambient, learned stream)",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: Settings push section + Jobs search UI",
+    "content": "Frontend: sw.js/push.js, Settings push, Jobs search UI",
     "status": "completed"
   },
   {
@@ -28,11 +20,11 @@
     "status": "completed"
   },
   {
-    "content": "Frontend compile (esbuild) + home screenshots verification",
+    "content": "Full E2E test + verify signup/onboarding (false-positive cleared) + fix placeholder",
     "status": "completed"
   },
   {
-    "content": "Full E2E test (testing_agent: home, jobs search, push UI, clean-slate signup) + fix bugs",
+    "content": "Deployment readiness check (deployment_agent)",
     "status": "in_progress"
   },
   {
@@ -40,7 +32,7 @@
     "status": "pending"
   },
   {
-    "content": "Deployment readiness check (deployment_agent) + per-user cost & pricing analysis",
+    "content": "Per-user cost & pricing analysis + final summary",
     "status": "pending"
   }
 ]
