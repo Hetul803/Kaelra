@@ -1,42 +1,46 @@
 [
   {
     "content": "Backend: config env vars (LinkedIn Jobs API + VAPID/push contact)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Backend: services/push.py (VAPID keygen, subscriptions, send_push) + services/notify.py shared notifier",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Backend: routes/push.py (public-key, subscribe, unsubscribe, test) + mount in server.py",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Backend: services/reindex.py (baseline-first continuous re-index) + scheduler job wiring",
-    "status": "pending"
+    "content": "Backend: services/reindex.py — continuous re-index + auto memory learning (continuous consumption)",
+    "status": "completed"
   },
   {
     "content": "Backend: services/skills/jobs_provider.py (LinkedIn/JSearch + mock) + jobs.py search/save + routes",
+    "status": "completed"
+  },
+  {
+    "content": "Backend: wire scheduler -> shared notifier (push), reindex job, server startup vapid init",
+    "status": "completed"
+  },
+  {
+    "content": "Test backend (testing_agent): push, reindex/auto-learn, jobs search/fallback, clean-slate gating",
+    "status": "in_progress"
+  },
+  {
+    "content": "Design: 'Entity' Kaelra Home redesign blueprint (design_agent)",
     "status": "pending"
   },
   {
-    "content": "Backend: wire scheduler._notify -> shared notifier (push), server startup vapid init",
+    "content": "Frontend: public/sw.js + src/lib/push.js helper",
     "status": "pending"
   },
   {
-    "content": "Test backend (testing_agent): push, reindex, jobs search/fallback, clean-slate gating",
+    "content": "Frontend: Entity Home redesign (cinematic living orb, conversation-first, ambient presence, 'what I learned')",
     "status": "pending"
   },
   {
-    "content": "Frontend: public/sw.js service worker + src/lib/push.js helper",
-    "status": "pending"
-  },
-  {
-    "content": "Frontend: Settings push notifications section (enable/disable/test)",
-    "status": "pending"
-  },
-  {
-    "content": "Frontend: Jobs page search UI (keywords/location, results, save, sample banner)",
+    "content": "Frontend: Settings push section + Jobs search UI",
     "status": "pending"
   },
   {
@@ -48,7 +52,11 @@
     "status": "pending"
   },
   {
-    "content": "Wipe all non-demo accounts (clean-slate script) for fresh user test",
+    "content": "Wipe all non-demo accounts (clean-slate) for fresh user test",
+    "status": "pending"
+  },
+  {
+    "content": "Deployment readiness check (deployment_agent) + per-user cost & pricing analysis",
     "status": "pending"
   }
 ]

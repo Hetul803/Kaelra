@@ -43,6 +43,24 @@ ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMa
 def elevenlabs_configured() -> bool:
     return bool(ELEVENLABS_API_KEY)
 
+
+# --- Jobs provider ("LinkedIn Jobs" / JSearch via RapidAPI; mock fallback) ---
+# Set LINKEDIN_JOBS_API_KEY to go live; until then Kaelra returns clearly-labelled
+# SAMPLE results so the Jobs UI is fully testable.
+LINKEDIN_JOBS_API_KEY = os.environ.get("LINKEDIN_JOBS_API_KEY", "").strip()
+LINKEDIN_JOBS_API_HOST = os.environ.get(
+    "LINKEDIN_JOBS_API_HOST", "linkedin-job-search-api.p.rapidapi.com").strip()
+LINKEDIN_JOBS_API_URL = os.environ.get("LINKEDIN_JOBS_API_URL", "").strip()
+JOBS_PROVIDER = os.environ.get("JOBS_PROVIDER", "auto").strip().lower()  # auto|linkedin|jsearch|mock
+
+
+def jobs_api_configured() -> bool:
+    return bool(LINKEDIN_JOBS_API_KEY)
+
+
+# --- Web Push (VAPID) --- self-contained; keys auto-generated + stored in Mongo.
+PUSH_CONTACT_EMAIL = os.environ.get("PUSH_CONTACT_EMAIL", "mailto:hello@kaelra.ai").strip()
+
 UPLOAD_DIR = ROOT_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 

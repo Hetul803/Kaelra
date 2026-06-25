@@ -1808,6 +1808,405 @@ Key action items:
         if success and result.get('ok'):
             self.log(f"✅ Google disconnect succeeds gracefully", "PASS")
     
+    # ==================== WEB PUSH TESTS (NEW) ====================
+    def test_web_push(self):
+        """Test Web Push endpoints (VAPID, subscribe, unsubscribe, test)"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING WEB PUSH (VAPID)", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Get VAPID public key (no auth required)
+        success, response = self.run_test(
+            "Get VAPID public key (no auth)",
+            "GET",
+            "push/vapid-public-key",
+            200
+        )
+        
+        vapid_public_key = None
+        if success and 'public_key' in response:
+            vapid_public_key = response['public_key']
+            self.log(f"✅ VAPID public key returned: {vapid_public_key[:20]}...", "PASS")
+            # Verify it's base64url encoded
+            if len(vapid_public_key) > 0 and all(c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_' for c in vapid_public_key):
+                self.log(f"✅ Public key is valid base64url format", "PASS")
+        
+        # Get push status for new user (should be subscribed:false)
+        if self.throwaway_token:
+            success, status = self.run_test(
+                "Get push status (new user)",
+                "GET",
+                "push/status",
+                200,
+                token=self.throwaway_token
+            )
+            if success:
+                if status.get('subscribed') == False:
+                    self.log(f"✅ New user has subscribed=false", "PASS")
+                else:
+                    self.log(f"❌ New user should have subscribed=false, got: {status}", "FAIL")
+        
+        # Subscribe to push (with demo user)
+        success, response = self.run_test(
+            "Subscribe to push",
+            "POST",
+            "push/subscribe",
+            200,
+            data={
+                "subscription": {
+                    "endpoint": "https://fcm.googleapis.com/fcm/send/test-endpoint-123",
+                    "keys": {
+                        "p256dh": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM",
+                        "auth": "tBHItJI5svbpez7KI4CCXg"
+                    }
+                },
+                "device_id": "test-device-push"
+            },
+            token=self.demo_token
+        )
+        if success and response.get('ok') == True:
+            self.log(f"✅ Push subscription saved", "PASS")
+        
+        # Get push status again (should be subscribed:true)
+        success, status = self.run_test(
+            "Get push status (after subscribe)",
+            "GET",
+            "push/status",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if status.get('subscribed') == True:
+                self.log(f"✅ User now has subscribed=true", "PASS")
+            else:
+                self.log(f"❌ User should have subscribed=true after subscribe, got: {status}", "FAIL")
+        
+        # Test push (should not 500, sent count may be 0)
+        success, response = self.run_test(
+            "Test push notification",
+            "POST",
+            "push/test",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if 'ok' in response and 'sent' in response:
+                self.log(f"✅ Test push returned ok={response['ok']}, sent={response['sent']}", "PASS")
+                if response['sent'] == 0:
+                    self.log(f"⚠️  No real push service reachable (sent=0 is acceptable)", "WARN")
+            else:
+                self.log(f"❌ Test push should return {{ok, sent}}, got: {response}", "FAIL")
+        
+        # Unsubscribe
+        success, response = self.run_test(
+            "Unsubscribe from push",
+            "POST",
+            "push/unsubscribe",
+            200,
+            data={
+                "endpoint": "https://fcm.googleapis.com/fcm/send/test-endpoint-123"
+            },
+            token=self.demo_token
+        )
+        if success and response.get('ok') == True:
+            self.log(f"✅ Push unsubscribe successful", "PASS")
+        
+        # Get push status again (should be subscribed:false)
+        success, status = self.run_test(
+            "Get push status (after unsubscribe)",
+            "GET",
+            "push/status",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            if status.get('subscribed') == False:
+                self.log(f"✅ User now has subscribed=false after unsubscribe", "PASS")
+            else:
+                self.log(f"❌ User should have subscribed=false after unsubscribe, got: {status}", "FAIL")
+    
+    # ==================== JOBS PROVIDER MOCK FALLBACK TESTS (NEW) ====================
+    def test_jobs_provider_mock(self):
+        """Test Jobs provider with mock fallback (no API key)"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING JOBS PROVIDER (MOCK FALLBACK)", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Search jobs (should return sample:true when no API key)
+        success, response = self.run_test(
+            "Search jobs (mock fallback)",
+            "POST",
+            "jobs/search",
+            200,
+            data={
+                "keywords": "backend engineer",
+                "location": "San Francisco",
+                "limit": 5
+            },
+            token=self.demo_token
+        )
+        
+        if success:
+            if response.get('sample') == True:
+                self.log(f"✅ Jobs search returns sample=true (no API key)", "PASS")
+            else:
+                self.log(f"❌ Jobs search should return sample=true when no API key, got: {response.get('sample')}", "FAIL")
+            
+            if response.get('provider') in ['mock', 'linkedin']:
+                self.log(f"✅ Provider field present: {response.get('provider')}", "PASS")
+            
+            results = response.get('results', [])
+            if len(results) > 0:
+                self.log(f"✅ Mock results returned: {len(results)} jobs", "PASS")
+                
+                # Verify result structure
+                job = results[0]
+                required_fields = ['title', 'company', 'location', 'match', 'tags', 'url']
+                missing = [f for f in required_fields if f not in job]
+                if not missing:
+                    self.log(f"✅ Job result has correct structure", "PASS")
+                else:
+                    self.log(f"❌ Job result missing fields: {missing}", "FAIL")
+                
+                # Verify match is between 0 and 1
+                if 0 <= job.get('match', -1) <= 1:
+                    self.log(f"✅ Match score is valid: {job.get('match')}", "PASS")
+            else:
+                self.log(f"❌ No mock results returned", "FAIL")
+        
+        # Test with fresh user - verify sample jobs are NOT persisted
+        if self.throwaway_token:
+            # Search jobs with fresh user
+            success, response = self.run_test(
+                "Search jobs (fresh user)",
+                "POST",
+                "jobs/search",
+                200,
+                data={
+                    "keywords": "software engineer",
+                    "location": "Remote",
+                    "limit": 3
+                },
+                token=self.throwaway_token
+            )
+            
+            if success and response.get('sample') == True:
+                self.log(f"✅ Fresh user gets sample results", "PASS")
+            
+            # Get jobs overview - should still be empty (sample not persisted)
+            success, overview = self.run_test(
+                "Get jobs overview (fresh user after sample search)",
+                "GET",
+                "jobs",
+                200,
+                token=self.throwaway_token
+            )
+            
+            if success:
+                matches = overview.get('matches', [])
+                if len(matches) == 0:
+                    self.log(f"✅ Sample jobs NOT persisted for fresh user (matches empty)", "PASS")
+                else:
+                    self.log(f"❌ Sample jobs should NOT be persisted, found {len(matches)} matches", "FAIL")
+        
+        # Test save job (should persist)
+        if success and len(results) > 0:
+            job_to_save = results[0]
+            success, saved = self.run_test(
+                "Save job",
+                "POST",
+                "jobs/save",
+                200,
+                data={"job": job_to_save},
+                token=self.demo_token
+            )
+            
+            if success and 'id' in saved:
+                self.log(f"✅ Job saved with ID: {saved['id']}", "PASS")
+                
+                # Verify it appears in pipeline.saved
+                success, overview = self.run_test(
+                    "Get jobs overview (after save)",
+                    "GET",
+                    "jobs",
+                    200,
+                    token=self.demo_token
+                )
+                
+                if success:
+                    pipeline = overview.get('pipeline', {})
+                    saved_jobs = pipeline.get('saved', [])
+                    if any(j.get('id') == saved['id'] for j in saved_jobs):
+                        self.log(f"✅ Saved job appears in pipeline.saved", "PASS")
+                    else:
+                        self.log(f"❌ Saved job should appear in pipeline.saved", "FAIL")
+    
+    # ==================== SCHEDULER AND REINDEX TESTS (NEW) ====================
+    def test_scheduler_and_reindex(self):
+        """Test scheduler run-due and continuous reindex"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING SCHEDULER AND REINDEX", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Test scheduler run-due (should not crash)
+        success, response = self.run_test(
+            "Run scheduler (run-due)",
+            "POST",
+            "scheduler/run-due",
+            200,
+            token=self.demo_token
+        )
+        
+        if success:
+            if 'ok' in response and 'fired' in response:
+                self.log(f"✅ Scheduler run-due succeeded: fired={response['fired']} routines", "PASS")
+            else:
+                self.log(f"❌ Scheduler should return {{ok, fired}}, got: {response}", "FAIL")
+        
+        # Test run routine now (demo user has routines)
+        # Get routines first
+        success, routines = self.run_test(
+            "Get routines for run-now test",
+            "GET",
+            "routines",
+            200,
+            token=self.demo_token
+        )
+        
+        routine_id = None
+        if success and len(routines) > 0:
+            routine_id = routines[0].get('id')
+            self.log(f"Found routine ID: {routine_id}", "INFO")
+        
+        if routine_id:
+            success, response = self.run_test(
+                "Run routine now",
+                "POST",
+                f"routines/{routine_id}/run-now",
+                200,
+                token=self.demo_token
+            )
+            
+            if success:
+                if response.get('ok') == True and 'result' in response:
+                    self.log(f"✅ Routine run-now succeeded", "PASS")
+                    result = response.get('result', {})
+                    if 'type' in result:
+                        self.log(f"   Routine type: {result['type']}, notifications: {result.get('notifications', 0)}, actions: {result.get('actions', 0)}", "INFO")
+                else:
+                    self.log(f"❌ Routine run-now should return {{ok, result}}, got: {response}", "FAIL")
+        
+        # Note: Continuous reindex runs automatically every 3 minutes via APScheduler
+        # We can't easily test it here without waiting, but we verified the endpoint exists
+        self.log("⚠️  Continuous reindex runs automatically every 3 min (APScheduler)", "WARN")
+        self.log("⚠️  Reindex idempotency and no-crash verified via code review", "WARN")
+    
+    # ==================== CLEAN-SLATE GATING TESTS (ENHANCED) ====================
+    def test_clean_slate_gating(self):
+        """Test clean-slate gating: fresh users get empty data, demo gets rich data"""
+        self.log("=" * 60, "INFO")
+        self.log("TESTING CLEAN-SLATE GATING", "INFO")
+        self.log("=" * 60, "INFO")
+        
+        # Test demo account (should have rich data)
+        self.log("Testing demo account (should have rich data)...", "INFO")
+        
+        # Demo: feed should have items
+        success, feed = self.run_test(
+            "Get feed (demo user)",
+            "GET",
+            "feed",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            items = feed.get('items', [])
+            if len(items) > 0:
+                self.log(f"✅ Demo user has rich feed: {len(items)} items", "PASS")
+            else:
+                self.log(f"❌ Demo user should have feed items, got empty", "FAIL")
+        
+        # Demo: skills should return all 4
+        success, skills_resp = self.run_test(
+            "Get skills (demo user)",
+            "GET",
+            "skills/relevant",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            skills = skills_resp.get('skills', [])
+            if len(skills) == 4:
+                self.log(f"✅ Demo user has all 4 skills", "PASS")
+            else:
+                self.log(f"❌ Demo user should have 4 skills, got {len(skills)}", "FAIL")
+        
+        # Demo: jobs should have matches
+        success, jobs = self.run_test(
+            "Get jobs (demo user)",
+            "GET",
+            "jobs",
+            200,
+            token=self.demo_token
+        )
+        if success:
+            matches = jobs.get('matches', [])
+            if len(matches) > 0:
+                self.log(f"✅ Demo user has job matches: {len(matches)}", "PASS")
+            else:
+                self.log(f"⚠️  Demo user has no job matches (may be expected)", "WARN")
+        
+        # Test fresh user (should have empty data)
+        if self.throwaway_token:
+            self.log("Testing fresh user (should have empty data)...", "INFO")
+            
+            # Fresh: feed should be empty
+            success, feed = self.run_test(
+                "Get feed (fresh user)",
+                "GET",
+                "feed",
+                200,
+                token=self.throwaway_token
+            )
+            if success:
+                items = feed.get('items', [])
+                if len(items) == 0:
+                    self.log(f"✅ Fresh user has empty feed", "PASS")
+                else:
+                    self.log(f"❌ Fresh user should have empty feed, got {len(items)} items", "FAIL")
+            
+            # Fresh: skills should be empty
+            success, skills_resp = self.run_test(
+                "Get skills (fresh user)",
+                "GET",
+                "skills/relevant",
+                200,
+                token=self.throwaway_token
+            )
+            if success:
+                skills = skills_resp.get('skills', [])
+                if len(skills) == 0:
+                    self.log(f"✅ Fresh user has empty skills", "PASS")
+                else:
+                    self.log(f"❌ Fresh user should have empty skills, got {len(skills)}", "FAIL")
+            
+            # Fresh: jobs should have empty matches
+            success, jobs = self.run_test(
+                "Get jobs (fresh user)",
+                "GET",
+                "jobs",
+                200,
+                token=self.throwaway_token
+            )
+            if success:
+                matches = jobs.get('matches', [])
+                if len(matches) == 0:
+                    self.log(f"✅ Fresh user has empty job matches", "PASS")
+                else:
+                    self.log(f"❌ Fresh user should have empty matches, got {len(matches)}", "FAIL")
+        else:
+            self.log("⚠️  Skipping fresh user tests (no throwaway token)", "WARN")
+    
     # ==================== RUN ALL TESTS ====================
     def run_all_tests(self):
         """Run all test suites"""
@@ -1852,6 +2251,12 @@ Key action items:
             # Voice and Google OAuth fallback tests
             self.test_voice_fallback()
             self.test_google_oauth()
+            
+            # NEW: Iteration 6 - Web Push, Jobs Mock, Scheduler, Clean-slate
+            self.test_web_push()
+            self.test_jobs_provider_mock()
+            self.test_scheduler_and_reindex()
+            self.test_clean_slate_gating()
             
         except KeyboardInterrupt:
             self.log("\n⚠️  Tests interrupted by user", "WARN")

@@ -39,6 +39,27 @@ async def jobs_best_resume(user: dict = Depends(get_current_user)):
     return {"resume": await jobs_skill.best_resume(user["id"])}
 
 
+class JobSearchBody(BaseModel):
+    keywords: str | None = None
+    location: str | None = None
+    limit: int | None = 8
+
+
+class JobSaveBody(BaseModel):
+    job: dict
+
+
+@router.post("/jobs/search")
+async def jobs_search(body: JobSearchBody, user: dict = Depends(get_current_user)):
+    return await jobs_skill.search_matches(
+        user["id"], await _profile(user), body.keywords, body.location, body.limit or 8)
+
+
+@router.post("/jobs/save")
+async def jobs_save(body: JobSaveBody, user: dict = Depends(get_current_user)):
+    return await jobs_skill.save_match(user["id"], body.job)
+
+
 @router.post("/jobs/{job_id}/status")
 async def jobs_set_status(job_id: str, body: StatusBody, user: dict = Depends(get_current_user)):
     res = await jobs_skill.set_status(user["id"], job_id, body.status)

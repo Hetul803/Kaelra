@@ -74,6 +74,75 @@ async def best_resume(user_id: str) -> dict | None:
             "reason": "Most recent resume on file; tailored to backend roles."}
 
 
+_RESUME_KEYWORDS = ["python", "fastapi", "mongodb", "react", "node", "docker", "kubernetes",
+                    "go", "java", "sql", "aws", "typescript", "graphql", "rust", "kotlin", "swift"]
+
+
+async def user_skills(user_id: str, profile: dict) -> list[str]:
+    """Derive a skill list from profile interests + indexed resume text."""
+    db = get_db()
+    skills: list[str] = []
+    for i in (profile or {}).get("interests", []) or []:
+        if i and i not in skills:
+            skills.append(i)
+    files = await db.files.find({"user_id": user_id}).to_list(50)
+    for f in files:
+        name = (f.get("name") or "").lower()
+        if "resume" in name or "cv" in name:
+            txt = (f.get("text") or "").lower()
+            for kw in _RESUME_KEYWORDS:
+                if kw in txt and kw not in skills:
+                    skills.append(kw)
+    return skills[:12]
+
+
+async def search_matches(user_id: str, profile: dict, keywords: str | None,
+                         location: str | None, limit: int = 8) -> dict:
+    """Search live jobs via the provider (LinkedIn/JSearch) with mock fallback.
+
+    Only REAL (non-sample) results are persisted into the pipeline so a fresh
+    user's clean home/feed is never polluted by sample data.
+    """
+    from services.skills import jobs_provider
+    skills = await user_skills(user_id, profile)
+    if not keywords:
+        keywords = " ".join(skills[:3]) or "software engineer"
+    res = await jobs_provider.search(keywords, location or "Remote", skills, limit)
+    if not res.get("sample"):
+        for r in res.get("results", []):
+            if await db_jobs_dupe(user_id, r):
+                continue
+            await get_db().jobs.insert_one({
+                "id": new_id(), "user_id": user_id, "status": "matched",
+                "created_at": now_iso(), "updated_at": now_iso(), **r,
+            })
+        await log_event(user_id, "jobs.searched", f"Searched jobs: {keywords}", "jobs", None,
+                        {"count": len(res.get("results", [])), "provider": res.get("provider")})
+    res["keywords"] = keywords
+    return res
+
+
+async def db_jobs_dupe(user_id: str, job: dict) -> bool:
+    db = get_db()
+    return bool(await db.jobs.find_one(
+        {"user_id": user_id, "title": job.get("title"), "company": job.get("company")}))
+
+
+async def save_match(user_id: str, job: dict) -> dict:
+    db = get_db()
+    fields = {k: job.get(k) for k in ("title", "company", "location", "salary", "match", "tags", "url", "description")}
+    existing = await db.jobs.find_one({"user_id": user_id, "title": job.get("title"), "company": job.get("company")})
+    if existing:
+        await db.jobs.update_one({"id": existing["id"]}, {"$set": {"status": "saved", "updated_at": now_iso()}})
+        await log_event(user_id, "jobs.saved", f"Saved: {job.get('title')} @ {job.get('company')}", "job", existing["id"])
+        return clean_doc(await db.jobs.find_one({"id": existing["id"]}))
+    doc = {"id": new_id(), "user_id": user_id, "status": "saved",
+           "created_at": now_iso(), "updated_at": now_iso(), **fields}
+    await db.jobs.insert_one(doc)
+    await log_event(user_id, "jobs.saved", f"Saved: {job.get('title')} @ {job.get('company')}", "job", doc["id"])
+    return clean_doc(doc)
+
+
 async def set_status(user_id: str, job_id: str, status: str) -> dict | None:
     db = get_db()
     if status not in PIPELINE:

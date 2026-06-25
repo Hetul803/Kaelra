@@ -52,12 +52,8 @@ async def _record_run(user_id: str, routine: dict, result: dict):
 
 
 async def _notify(user_id: str, title: str, body: str, ntype: str = "reminder", scheduled_for: str | None = None):
-    db = get_db()
-    await db.notifications.insert_one({
-        "id": new_id(), "user_id": user_id, "title": title, "body": body,
-        "type": ntype, "scheduled_for": scheduled_for, "status": "delivered",
-        "read": False, "created_at": now_iso(),
-    })
+    from services.notify import notify
+    await notify(user_id, title, body, ntype, scheduled_for=scheduled_for, url="/")
 
 
 async def fire_routine(user_id: str, routine: dict, user: dict | None = None) -> dict:
@@ -172,6 +168,15 @@ async def run_due(now: dt.datetime | None = None) -> int:
     return fired
 
 
+async def _reindex_tick():
+    """Continuous re-index pass: keep every connected user's context fresh."""
+    from services.reindex import reindex_all
+    try:
+        await reindex_all()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("reindex tick failed: %s", e)
+
+
 def start_scheduler():
     global _scheduler
     if _scheduler:
@@ -179,8 +184,10 @@ def start_scheduler():
     _scheduler = AsyncIOScheduler(timezone="UTC")
     _scheduler.add_job(run_due, "interval", minutes=1, id="kaelra_routine_tick",
                        max_instances=1, coalesce=True)
+    _scheduler.add_job(_reindex_tick, "interval", minutes=3, id="kaelra_reindex_tick",
+                       max_instances=1, coalesce=True)
     _scheduler.start()
-    logger.info("Kaelra routine scheduler started")
+    logger.info("Kaelra routine + reindex scheduler started")
 
 
 def shutdown_scheduler():
