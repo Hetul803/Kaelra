@@ -1,0 +1,64 @@
+{
+  "summary": "Tested Kaelra Entity Home redesign, Browser Alerts (Web Push), Jobs Search with sample fallback, and clean-slate gating. Backend APIs 99.2% passing. Frontend demo user flows working correctly. New user signup flow has UI issue preventing completion.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "minor_issues": [
+      {
+        "test": "Backend test suite",
+        "issue": "1 test failed out of 126 (99.2% success rate)",
+        "impact": "Minor - overall backend functionality working",
+        "fix_priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Auth/Signup",
+        "issue": "New user signup form shows 'Hetul' pre-filled in name field and doesn't submit successfully",
+        "selector": "input[name='name']",
+        "fix_priority": "HIGH",
+        "details": "Form stays on /auth page after clicking 'Create account' button. Name field appears to be pre-filled with demo user data."
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: Web Push APIs (vapid-public-key, subscribe, unsubscribe, test) - 100%",
+    "Backend: Jobs search with sample fallback - 100%",
+    "Backend: Clean-slate gating (demo has data, fresh user empty) - 100%",
+    "Backend: Feed endpoint - 100%",
+    "Frontend: Entity Home - kaelra-greeting with warm briefing",
+    "Frontend: Entity Home - home-ambient-status and phrase present",
+    "Frontend: Entity Home - Conversation composer (textarea, send, listen buttons)",
+    "Frontend: Entity Home - Intent chips present and clickable",
+    "Frontend: Entity Home - kaelra-mute-toggle works (no crash)",
+    "Frontend: Entity Home - Priority feed with items and tabs",
+    "Frontend: Entity Home - Feed items clickable (KaelraSpeaks dialog)",
+    "Frontend: Entity Home - Learned stream with 8 items (demo)",
+    "Frontend: Settings - settings-push-card present",
+    "Frontend: Settings - settings-push-toggle clickable (no crash)",
+    "Frontend: Jobs - jobs-search-panel with keywords input",
+    "Frontend: Jobs - jobs-search-sample-banner present (no API key)",
+    "Frontend: Jobs - 5 sample job results displayed",
+    "Frontend: Jobs - job-search-save-button working"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/tmp/backend_test_output.log",
+    ".screenshots/kaelra_home.png",
+    ".screenshots/settings_push.png",
+    ".screenshots/jobs_search.png",
+    ".screenshots/signup_form.png"
+  ],
+  "success_percentage": {
+    "backend": "99.2%",
+    "frontend_demo": "100%",
+    "frontend_new_user": "0% (signup blocked)"
+  },
+  "updated_files": [],
+  "action_item_for_main_agent": "Fix new user signup flow: The signup form pre-fills 'Hetul' in the name field and doesn't submit successfully. After clicking 'Create account', the page stays on /auth instead of creating the user and navigating to home. This blocks testing of clean-slate empty state for new users. Backend clean-slate gating is verified working via API tests (fresh user gets empty feed, skills, jobs). All other features (Entity Home, Browser Alerts, Jobs Search) are working correctly for demo user.",
+  "should_call_test_agent_after_fix": "true",
+  "should_main_agent_test_itself": "false"
+}

@@ -90,10 +90,31 @@ async def build_feed(user: dict) -> dict:
 
     cnts = await action_counts(uid)
     briefing = await get_cached(uid)
+
+    # Continuous memory: what Kaelra has LEARNED on her own (background re-index).
+    learned = clean_docs(
+        await db.memories.find({"user_id": uid, "learned": True})
+        .sort("created_at", -1).to_list(8)
+    )
+    learned_count = await db.memories.count_documents({"user_id": uid, "learned": True})
+
+    # Ambient presence: which real sources she's actively watching + last sync.
+    _LABELS = {"gmail": "your inbox", "google_calendar": "your calendar", "google_drive": "your Drive"}
+    connected = [a["provider"] async for a in db.connected_accounts.find({"user_id": uid})
+                 if a.get("status") == "connected"]
+    watching = [_LABELS[p] for p in connected if p in _LABELS]
+    ctx_state = await db.context_state.find_one({"user_id": uid}) or {}
+    synced_at = ctx_state.get("last_built") or (briefing or {}).get("generated_at")
+
     return {
         "name": name,
         "greeting": (briefing or {}).get("greeting"),
         "generated_at": (briefing or {}).get("generated_at"),
         "pending_actions": cnts.get("pending", 0),
         "items": items,
+        "learned": learned,
+        "learned_count": learned_count,
+        "watching": watching,
+        "connected": connected,
+        "synced_at": synced_at,
     }

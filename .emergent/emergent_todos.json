@@ -1,55 +1,39 @@
 [
   {
-    "content": "Backend: config env vars (LinkedIn Jobs API + VAPID/push contact)",
+    "content": "Backend engine (push, reindex, jobs provider, scheduler) + tested",
     "status": "completed"
   },
   {
-    "content": "Backend: services/push.py + services/notify.py",
+    "content": "Self-healing briefing fallback",
     "status": "completed"
   },
   {
-    "content": "Backend: routes/push.py + mount",
+    "content": "Design: 'Entity' Kaelra Home blueprint",
     "status": "completed"
-  },
-  {
-    "content": "Backend: services/reindex.py continuous re-index + auto memory learning",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: jobs_provider.py + jobs search/save + routes",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: scheduler wiring + vapid startup",
-    "status": "completed"
-  },
-  {
-    "content": "Test backend (testing_agent) + self-healing briefing fallback",
-    "status": "completed"
-  },
-  {
-    "content": "Design: 'Entity' Kaelra Home redesign blueprint (design_agent)",
-    "status": "in_progress"
   },
   {
     "content": "Frontend: public/sw.js + src/lib/push.js helper",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Frontend: Entity Home redesign (cinematic living orb, conversation-first, ambient presence, 'what I learned')",
-    "status": "pending"
+    "content": "Frontend: Entity Home redesign (living orb, conversation-first, ambient, learned stream)",
+    "status": "completed"
   },
   {
     "content": "Frontend: Settings push section + Jobs search UI",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Frontend compile (esbuild) + screenshots verification",
-    "status": "pending"
+    "content": "Demo learned memories seed (continuous-memory showcase)",
+    "status": "completed"
   },
   {
-    "content": "Full E2E test (testing_agent) + fix bugs",
-    "status": "pending"
+    "content": "Frontend compile (esbuild) + home screenshots verification",
+    "status": "completed"
+  },
+  {
+    "content": "Full E2E test (testing_agent: home, jobs search, push UI, clean-slate signup) + fix bugs",
+    "status": "in_progress"
   },
   {
     "content": "Wipe all non-demo accounts (clean-slate) for fresh user test",

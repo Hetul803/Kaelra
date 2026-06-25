@@ -10,6 +10,35 @@ from config import get_db, DEMO_EMAIL, DEMO_PASSWORD
 from connectors import CONNECTOR_CATALOG
 from auth import hash_password
 from utils import new_id, now_iso
+import datetime as _dt
+
+
+def _ago(minutes: int) -> str:
+    return (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(minutes=minutes)).isoformat()
+
+
+# Demo-only: a few memories Kaelra "learned" on her own, to showcase the
+# continuous-memory stream on the demo home. Strictly gated to is_demo.
+_DEMO_LEARNED = [
+    {"category": "Important people", "content": "Maria Lopez (TA) is the contact for CS-401 lab questions.", "source": "email", "minutes": 12},
+    {"category": "Things to monitor", "content": "Watching your USCIS case email thread for any status change.", "source": "email", "important": True, "minutes": 47},
+    {"category": "Important documents/files", "content": "Aegisure_pitch_deck.pdf is in your Drive — useful for investor replies.", "source": "drive", "minutes": 95},
+    {"category": "Work/class schedule", "content": "Your Downtown Store shift swapped to 2:00 PM this week.", "source": "calendar", "minutes": 160},
+]
+
+
+async def _seed_learned(user_id: str):
+    db = get_db()
+    docs = []
+    for m in _DEMO_LEARNED:
+        docs.append({
+            "id": new_id(), "user_id": user_id, "category": m["category"],
+            "content": m["content"], "important": m.get("important", False),
+            "temporary": False, "learned": True, "source": m["source"],
+            "created_at": _ago(m["minutes"]),
+        })
+    if docs:
+        await db.memories.insert_many(docs)
 
 # Connectors that only ever serve realistic *demo* data in v0. Real users must
 # connect Google for these to light up, so we don't pre-connect them (which
@@ -61,6 +90,9 @@ async def ensure_demo_alive():
     )
     # Keep the demo voice-on so Kaelra speaks her briefing on the demo home.
     await db.profiles.update_one({"user_id": demo["id"]}, {"$set": {"voice_enabled": True}})
+    # Showcase continuous-memory: ensure the demo has a few LEARNED memories.
+    if not await db.memories.find_one({"user_id": demo["id"], "learned": True}):
+        await _seed_learned(demo["id"])
 
 
 async def _insert_many(coll, user_id, items, base):

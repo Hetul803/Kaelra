@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { triggerKaelraRefresh } from "../components/AppShell";
 import { GlassCard, SectionTitle, StatusPill, LoadingState } from "../components/Bits";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -13,6 +14,7 @@ import {
 } from "../components/ui/select";
 import {
   Briefcase, FileText, Building2, MapPin, Send, Sparkles, BadgeCheck, Wallet,
+  Search, Bookmark, ExternalLink, Info,
 } from "lucide-react";
 
 const PIPELINE_COLS = ["saved", "applied", "interviewing", "offer", "rejected"];
@@ -65,12 +67,57 @@ function JobCard({ job, onStatus, onReply, busy }) {
   );
 }
 
+function SearchResultCard({ job, onSave, saving }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-3.5" data-testid="job-search-result">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-heading text-sm truncate">{job.title}</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><Building2 size={12} /> {job.company}</span>
+            <span className="inline-flex items-center gap-1"><MapPin size={12} /> {job.location}</span>
+            {job.salary && <span className="inline-flex items-center gap-1"><Wallet size={12} /> {job.salary}</span>}
+          </div>
+        </div>
+        {typeof job.match === "number" && (
+          <StatusPill tone="teal" className="shrink-0">{Math.round(job.match * 100)}% match</StatusPill>
+        )}
+      </div>
+      {job.tags?.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {job.tags.map((t) => (
+            <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-muted-foreground">{t}</span>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="secondary" className="h-8 gap-1.5 text-xs" disabled={saving}
+          onClick={() => onSave(job)} data-testid="job-search-save-button">
+          <Bookmark size={13} /> Save to pipeline
+        </Button>
+        {job.url && (
+          <a href={job.url} target="_blank" rel="noreferrer"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 text-xs text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+            data-testid="job-search-apply-link">
+            <ExternalLink size={13} /> View
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Jobs() {
   const [data, setData] = useState(null);
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [sq, setSq] = useState("");
+  const [sloc, setSloc] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [search, setSearch] = useState(null);
+  const [savingKey, setSavingKey] = useState(null);
 
   const load = useCallback(async () => {
     const [o, r] = await Promise.all([api.get("/jobs"), api.get("/jobs/best-resume")]);
@@ -100,6 +147,30 @@ export default function Jobs() {
       triggerKaelraRefresh();
     } catch (e) { toast.error("Couldn't draft a reply right now."); }
     finally { setBusyId(null); }
+  };
+
+  const runSearch = async () => {
+    setSearching(true);
+    try {
+      const { data: res } = await api.post("/jobs/search", {
+        keywords: sq || undefined, location: sloc || undefined,
+      });
+      setSearch(res);
+      if (!res.sample) await load();
+    } catch (e) { toast.error("Couldn't search jobs right now."); }
+    finally { setSearching(false); }
+  };
+
+  const onSaveResult = async (job) => {
+    const key = job.title + job.company;
+    setSavingKey(key);
+    try {
+      await api.post("/jobs/save", { job });
+      toast.success(`Saved “${job.title}” to your pipeline.`);
+      await load();
+      triggerKaelraRefresh();
+    } catch (e) { toast.error("Couldn't save that job."); }
+    finally { setSavingKey(null); }
   };
 
   if (loading) return <LoadingState label="Loading your job search…" />;
@@ -133,6 +204,42 @@ export default function Jobs() {
           <p className="text-sm text-muted-foreground">
             No resume found yet. Upload one in Files or connect Drive, and Kaelra will pick the best one for each role.
           </p>
+        )}
+      </GlassCard>
+
+      {/* Live job search */}
+      <GlassCard className="rounded-2xl p-4" data-testid="jobs-search-panel">
+        <SectionTitle kicker="Find roles" title="Search live jobs" icon={Search} />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input value={sq} onChange={(e) => setSq(e.target.value)}
+            placeholder="Role or keywords (e.g. backend engineer)"
+            onKeyDown={(e) => { if (e.key === "Enter") runSearch(); }}
+            className="bg-white/5 border-white/10" data-testid="jobs-search-keywords" />
+          <Input value={sloc} onChange={(e) => setSloc(e.target.value)}
+            placeholder="Location (e.g. Remote)"
+            onKeyDown={(e) => { if (e.key === "Enter") runSearch(); }}
+            className="bg-white/5 border-white/10 sm:max-w-[200px]" data-testid="jobs-search-location" />
+          <Button onClick={runSearch} disabled={searching} className="gap-1.5" data-testid="jobs-search-button">
+            <Search size={15} /> {searching ? "Searching…" : "Search"}
+          </Button>
+        </div>
+        {search && (
+          <div className="mt-4">
+            {search.sample && (
+              <div className="mb-3 flex items-start gap-2 rounded-xl border border-[rgba(245,158,11,0.22)] bg-[rgba(245,158,11,0.1)] px-3 py-2 text-xs text-[rgb(253,230,138)]" data-testid="jobs-search-sample-banner">
+                <Info size={14} className="mt-0.5 shrink-0" />
+                <span>Sample results — add your LinkedIn Jobs API key to see live roles. These aren't saved until you choose “Save to pipeline”.</span>
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2" data-testid="jobs-search-results">
+              {(search.results || []).map((j, i) => (
+                <SearchResultCard key={i} job={j} onSave={onSaveResult} saving={savingKey === j.title + j.company} />
+              ))}
+              {(search.results || []).length === 0 && (
+                <p className="text-sm text-muted-foreground">No roles found. Try different keywords or a broader location.</p>
+              )}
+            </div>
+          </div>
         )}
       </GlassCard>
 

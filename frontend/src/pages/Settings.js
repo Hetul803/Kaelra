@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { pushSupported, getPushState, enablePush, disablePush, sendTestPush } from "../lib/push";
 import { GlassCard, SectionTitle, StatusPill, LoadingState } from "../components/Bits";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -17,7 +18,7 @@ import {
 } from "../components/ui/alert-dialog";
 import {
   User, Sparkles, ShieldCheck, Bell, Mic, Download, Trash2, ScrollText, Save,
-  Link2, Brain, Database, Check, X, RefreshCw,
+  Link2, Brain, Database, Check, X, RefreshCw, BellRing,
 } from "lucide-react";
 
 const TONES = ["calm", "friendly", "direct", "energetic"];
@@ -38,6 +39,31 @@ export default function Settings() {
   const [ctx, setCtx] = useState(null);
   const [google, setGoogle] = useState(null);
   const [suggested, setSuggested] = useState([]);
+  const [pushState, setPushState] = useState({ supported: false, subscribed: false });
+
+  const loadPush = useCallback(async () => {
+    if (pushSupported()) setPushState(await getPushState());
+  }, []);
+  useEffect(() => { loadPush(); }, [loadPush]);
+
+  const togglePush = async (on) => {
+    try {
+      if (on) { await enablePush(); toast.success("Browser alerts enabled."); }
+      else { await disablePush(); toast.success("Browser alerts disabled."); }
+    } catch (e) {
+      if (e?.message === "denied") toast.error("Notifications are blocked in your browser settings.");
+      else if (e?.message === "unsupported") toast.message("This browser doesn't support push alerts.");
+      else toast.error("Couldn't update alerts.");
+    } finally { await loadPush(); }
+  };
+
+  const testPush = async () => {
+    try {
+      const r = await sendTestPush();
+      if (r.sent) toast.success("Sent a test alert to this device.");
+      else toast.message("Subscribed — but no device received it yet.");
+    } catch (e) { toast.error("Couldn't send a test alert."); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -180,6 +206,32 @@ export default function Settings() {
           <Toggle k="device_sync" icon={ShieldCheck} label="Phone & laptop sync" desc="Continue seamlessly across devices." />
           <Toggle k="voice_enabled" icon={Mic} label="Voice mode (preview)" desc="Voice-ready UI — live voice coming soon." />
         </div>
+      </GlassCard>
+
+      {/* Browser alerts (web push) */}
+      <GlassCard className="rounded-2xl p-5" data-testid="settings-push-card">
+        <SectionTitle kicker="Reach me anywhere" title="Browser alerts" icon={BellRing} />
+        {pushState.supported ? (
+          <>
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <BellRing size={16} className="text-[hsl(var(--primary))]" />
+                <div>
+                  <div className="text-sm">Push notifications</div>
+                  <div className="text-xs text-muted-foreground">Get routines &amp; alerts even when Kaelra is closed.</div>
+                </div>
+              </div>
+              <Switch checked={pushState.subscribed} onCheckedChange={togglePush} data-testid="settings-push-toggle" />
+            </div>
+            {pushState.subscribed && (
+              <Button variant="secondary" size="sm" className="mt-3 gap-1.5" onClick={testPush} data-testid="settings-push-test">
+                <BellRing size={14} /> Send a test alert
+              </Button>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">This browser doesn't support push notifications. Try Chrome or Edge on desktop or Android.</p>
+        )}
       </GlassCard>
 
       {/* Approval rules */}
