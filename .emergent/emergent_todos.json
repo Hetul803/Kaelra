@@ -1,38 +1,26 @@
 [
   {
-    "content": "Backend engine (push, reindex, jobs provider, scheduler) + tested",
+    "content": "Fix double-speak (voice.js de-dupe + Home session-greeting guard)",
     "status": "completed"
   },
   {
-    "content": "Self-healing briefing fallback",
+    "content": "Differentiate Dashboard (Control Panel) from Home (remove duplicate chat/greeting)",
     "status": "completed"
   },
   {
-    "content": "Design + Entity Home redesign (living orb, conversation-first, ambient, learned stream)",
+    "content": "Home: news cards + speaker-first + 'show me ...' natural-language commands",
     "status": "completed"
   },
   {
-    "content": "Frontend: sw.js/push.js, Settings push, Jobs search UI",
+    "content": "Backend: add news to /api/feed",
     "status": "completed"
   },
   {
-    "content": "Demo learned memories seed (continuous-memory showcase)",
-    "status": "completed"
+    "content": "Verify fixes via testing_agent (double-speak, dashboard differentiation, commands, news)",
+    "status": "in_progress"
   },
   {
-    "content": "Full E2E test + verify signup/onboarding + fix placeholder",
-    "status": "completed"
-  },
-  {
-    "content": "Deployment readiness check (deployment_agent) — PASS",
-    "status": "completed"
-  },
-  {
-    "content": "Wipe all non-demo accounts (clean-slate) — only demo remains",
-    "status": "completed"
-  },
-  {
-    "content": "Per-user cost & pricing analysis + final summary",
-    "status": "completed"
+    "content": "Clarify scope + gather credentials for mega-features (Outlook/MS, Founder analytics, Maps/location, native push, multi-account, wake-word)",
+    "status": "pending"
   }
 ]

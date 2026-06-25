@@ -15,16 +15,16 @@ import { Textarea } from "../components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
   Volume2, VolumeX, Send, Mic, Square, Mail, CalendarClock, FolderOpen, Bell,
-  ArrowRight, Sparkles, Link2, Brain, BellRing, Activity, Cpu,
+  ArrowRight, Sparkles, Link2, Brain, BellRing, Activity, Cpu, Newspaper,
 } from "lucide-react";
 
-const KIND_ICON = { email: Mail, event: CalendarClock, file: FolderOpen, note: Bell };
+const KIND_ICON = { email: Mail, event: CalendarClock, file: FolderOpen, note: Bell, news: Newspaper };
 const SOURCE_ICON = { email: Mail, drive: FolderOpen, calendar: CalendarClock };
 
 const QUICK_INTENTS = [
   "What needs my attention today?",
-  "Draft replies to anything urgent",
-  "Summarize my next meeting",
+  "Show me the calendar",
+  "Show me my email",
   "What did you learn since yesterday?",
 ];
 
@@ -32,7 +32,23 @@ const FEED_TABS = [
   { value: "all", label: "All" },
   { value: "email", label: "Email" },
   { value: "event", label: "Calendar" },
+  { value: "news", label: "News" },
   { value: "file", label: "Files" },
+];
+
+// Natural-language routing so the user can just tell Kaelra what to show.
+const INTENT_ROUTES = [
+  { keys: ["job", "career", "recruiter"], path: "/jobs" },
+  { keys: ["class", "school", "assignment", "course"], path: "/class" },
+  { keys: ["founder", "startup", "analytics"], path: "/founder" },
+  { keys: ["smart home", "home device", "lights", "thermostat"], path: "/home" },
+  { keys: ["memory", "remember", "learned", "what you know"], path: "/memory" },
+  { keys: ["queue", "approval", "pending action", "to approve"], path: "/queue" },
+  { keys: ["routine", "schedule a"], path: "/routines" },
+  { keys: ["dashboard", "control panel", "overview"], path: "/dashboard" },
+  { keys: ["setting", "privacy"], path: "/settings" },
+  { keys: ["connected account", "connect google", "connect"], path: "/accounts" },
+  { keys: ["device"], path: "/devices" },
 ];
 
 function relTime(iso) {
@@ -77,11 +93,15 @@ export default function Kaelra() {
     }
   }, [profile]);
 
-  // Speak the greeting once (after we know the mute preference)
+  // Speak the greeting once per session (after we know the mute preference)
   useEffect(() => {
     if (!feed?.greeting || greetedRef.current || !mutePrefRef.current) return;
     greetedRef.current = true;
-    if (!muted && voice?.speak) voice.speak(feed.greeting);
+    const alreadyGreeted = sessionStorage.getItem("kaelra_greeted") === "1";
+    if (!muted && !alreadyGreeted && voice?.speak) {
+      sessionStorage.setItem("kaelra_greeted", "1");
+      voice.speak(feed.greeting);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feed, muted]);
 
@@ -108,10 +128,37 @@ export default function Kaelra() {
     try { await api.put("/settings", { voice_enabled: !next }); refreshProfile && refreshProfile(); } catch (e) { /* ignore */ }
   };
 
+  // Try to satisfy a "show me ..." style request locally before sending to chat.
+  const handleIntent = (raw) => {
+    const t = (raw || "").toLowerCase();
+    const isShow = /\b(show|open|pull up|go to|take me to|bring up|see|view|display|let me see)\b/.test(t);
+    if (!isShow) return false;
+    const cardKinds = [
+      { keys: ["email", "inbox", "mail", "message"], kind: "email", fallback: "/dashboard" },
+      { keys: ["calendar", "schedule", "event", "meeting", "agenda"], kind: "event", fallback: "/dashboard" },
+      { keys: ["news", "headline"], kind: "news", fallback: "/dashboard" },
+      { keys: ["file", "document", "doc", "attachment"], kind: "file", fallback: "/files" },
+    ];
+    for (const c of cardKinds) {
+      if (c.keys.some((k) => t.includes(k))) {
+        const it = (feed?.items || []).find((x) => x.kind === c.kind);
+        if (it) { voice.stopSpeaking(); setSelected(it); return true; }
+        navigate(c.fallback);
+        return true;
+      }
+    }
+    for (const r of INTENT_ROUTES) {
+      if (r.keys.some((k) => t.includes(k))) { navigate(r.path); return true; }
+    }
+    return false;
+  };
+
   const ask = (text) => {
     const message = (text ?? input).trim();
     if (!message) return;
     voice.stopSpeaking();
+    setInput("");
+    if (handleIntent(message)) return;
     navigate("/talk", { state: { initialMessage: message } });
   };
 

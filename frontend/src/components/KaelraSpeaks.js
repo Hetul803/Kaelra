@@ -4,10 +4,10 @@ import { Button } from "./ui/button";
 import { StatusPill } from "./Bits";
 import { KaelraOrb } from "./KaelraOrb";
 import {
-  Volume2, Square, Mail, CalendarClock, FolderOpen, Bell, MapPin, VolumeX,
+  Volume2, Square, Mail, CalendarClock, FolderOpen, Bell, MapPin, VolumeX, Newspaper, ExternalLink,
 } from "lucide-react";
 
-const KIND_ICON = { email: Mail, event: CalendarClock, file: FolderOpen, note: Bell };
+const KIND_ICON = { email: Mail, event: CalendarClock, file: FolderOpen, note: Bell, news: Newspaper };
 
 /**
  * "Kaelra speaks" view. When opened she auto-narrates the item aloud (unless muted,
@@ -85,6 +85,17 @@ export function KaelraSpeaks({ item, muted, voice, onClose }) {
           )}
           {item.kind === "note" && card.body && (
             <p className="mt-2.5 text-sm text-foreground/80">{card.body}</p>
+          )}
+          {item.kind === "news" && (
+            <div className="mt-2.5 space-y-2">
+              {card.summary && <p className="text-sm text-foreground/80">{card.summary}</p>}
+              {card.url && (
+                <a href={card.url} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-[hsl(var(--primary))] hover:underline" data-testid="kaelra-speaks-news-link">
+                  <ExternalLink size={12} /> Read the story
+                </a>
+              )}
+            </div>
           )}
         </div>
 

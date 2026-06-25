@@ -1,12 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { formatDistanceToNow, parseISO } from "date-fns";
 import { api } from "../lib/api";
 import { triggerKaelraRefresh } from "../components/AppShell";
-import { KaelraOrb } from "../components/KaelraOrb";
 import { GlassCard, SectionTitle, StatusPill, LoadingState } from "../components/Bits";
-import { CommandBar } from "../components/CommandBar";
 import { ActionCard } from "../components/ActionCard";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
@@ -23,40 +20,30 @@ const deviceIcon = (k) => (k === "phone" ? Smartphone : k === "tablet" ? Tablet 
 
 export default function Today() {
   const [data, setData] = useState(null);
-  const [briefing, setBriefing] = useState(null);
-  const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await api.get("/dashboard");
     setData(data);
-    setBriefing(data.briefing);
     return data;
   }, []);
 
-  const generate = useCallback(async (force = false) => {
-    setGenerating(true);
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
     try {
-      const { data } = await api.post("/briefing", null, { params: { force } });
-      setBriefing(data.briefing);
       await load();
-      triggerKaelraRefresh();
-      if (force) toast.success("Kaelra refreshed your briefing.");
+      toast.success("Control panel refreshed.");
     } catch (e) {
-      toast.error("Kaelra couldn't prepare the briefing right now.");
+      toast.error("Couldn't refresh right now.");
     } finally {
-      setGenerating(false);
+      setRefreshing(false);
     }
   }, [load]);
 
   useEffect(() => {
     (async () => {
-      try {
-        const d = await load();
-        if (!d.briefing) await generate(false);
-      } finally {
-        setLoading(false);
-      }
+      try { await load(); } finally { setLoading(false); }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -70,7 +57,6 @@ export default function Today() {
   if (loading) return <LoadingState label="Kaelra is checking your day…" />;
 
   const cards = data?.cards || {};
-  const profile = data?.profile || {};
   const events = cards.calendar?.events || [];
   const importantEmails = cards.emails?.important || [];
   const commute = cards.commute;
@@ -83,40 +69,28 @@ export default function Today() {
 
   return (
     <div className="mx-auto max-w-[1200px] space-y-5">
-      {/* Hero */}
+      {/* Control panel header */}
       <div className="grid gap-4 lg:grid-cols-12">
-        <GlassCard className="rounded-2xl p-5 lg:col-span-8" data-testid="today-daily-briefing-card">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <KaelraOrb size={92} state={generating ? "thinking" : "speaking"} className="shrink-0" />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="kaelra-kicker">Daily briefing</span>
-                <Button size="sm" variant="ghost" className="gap-1.5 text-xs" disabled={generating}
-                  onClick={() => generate(true)} data-testid="today-refresh-briefing">
-                  <RefreshCw size={13} className={generating ? "animate-spin" : ""} /> Refresh
-                </Button>
-              </div>
-              {generating && !briefing ? (
-                <p className="mt-2 text-sm text-muted-foreground font-mono-k">Kaelra is checking your day…</p>
-              ) : (
-                <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-foreground/95">
-                  {briefing?.greeting || `Good day, ${profile.call_me}. Ask me what matters today.`}
-                </p>
-              )}
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                {briefing?.generated_at && (
-                  <span className="font-mono-k">
-                    Updated {formatDistanceToNow(parseISO(briefing.generated_at), { addSuffix: true })}
-                  </span>
-                )}
-                {data?.action_counts?.pending > 0 && (
-                  <StatusPill tone="teal">Prepared {data.action_counts.pending} actions</StatusPill>
-                )}
-              </div>
+        <GlassCard className="rounded-2xl p-5 lg:col-span-8" data-testid="today-control-panel-header">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <span className="kaelra-kicker">Control panel</span>
+              <h2 className="mt-1 font-heading text-xl md:text-2xl">Your day at a glance</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The raw data behind Kaelra. For the conversation, head to{" "}
+                <Link to="/" className="text-[hsl(var(--primary))] hover:underline">Kaelra</Link>.
+              </p>
             </div>
+            <Button size="sm" variant="ghost" className="shrink-0 gap-1.5 text-xs" disabled={refreshing}
+              onClick={refresh} data-testid="today-refresh-data">
+              <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh
+            </Button>
           </div>
-          <div className="mt-4">
-            <CommandBar />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <StatusPill tone="teal" data-testid="cp-stat-actions"><ListChecks size={12} /> {data?.action_counts?.pending || 0} pending</StatusPill>
+            <StatusPill><CalendarDays size={12} /> {events.length} events</StatusPill>
+            <StatusPill><Mail size={12} /> {cards.emails?.unread_count || 0} unread</StatusPill>
+            <StatusPill><FolderOpen size={12} /> {filesNeeding.length} files need attention</StatusPill>
           </div>
         </GlassCard>
 

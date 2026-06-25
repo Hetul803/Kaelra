@@ -74,7 +74,19 @@ async def build_feed(user: dict) -> dict:
             "card": f,
         })
 
-    # 4) What Kaelra recently handled (notifications)
+    # 4) News briefing (headlines tailored to interests)
+    for i, a in enumerate(((cards.get("news") or {}).get("articles") or [])[:3]):
+        items.append({
+            "id": f"news-{i}",
+            "kind": "news",
+            "title": a.get("title"),
+            "subtitle": f"{a.get('source', 'News')}" + (f" · {a.get('interest')}" if a.get("interest") else ""),
+            "tone": "default",
+            "narration": f"In the news: {a.get('title')}." + (f" From {a.get('source')}." if a.get("source") else ""),
+            "card": a,
+        })
+
+    # 5) What Kaelra recently handled (notifications)
     notifs = await db.notifications.find({"user_id": uid}).sort("created_at", -1).to_list(8)
     for n in clean_docs(notifs)[:4]:
         items.append({

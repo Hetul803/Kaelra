@@ -7,6 +7,8 @@ import { api } from "./api";
  * - STT: browser Web Speech API (SpeechRecognition).
  * Everything degrades gracefully when unsupported.
  */
+let _lastSpeak = { text: "", ts: 0 };
+
 export function useVoice() {
   const [provider, setProvider] = useState("browser");
   const [speaking, setSpeaking] = useState(false);
@@ -32,6 +34,11 @@ export function useVoice() {
 
   const speak = useCallback(async (text) => {
     if (!text) return;
+    // De-dupe: ignore an identical narration fired within 4s (prevents the
+    // "speaks twice back to back" issue from remounts / fallback paths).
+    const now = Date.now();
+    if (text === _lastSpeak.text && now - _lastSpeak.ts < 4000) return;
+    _lastSpeak = { text, ts: now };
     stopSpeaking();
     setSpeaking(true);
     // Try premium TTS via backend
