@@ -4,32 +4,32 @@
     "status": "completed"
   },
   {
-    "content": "Backend: services/push.py (VAPID keygen, subscriptions, send_push) + services/notify.py shared notifier",
+    "content": "Backend: services/push.py + services/notify.py",
     "status": "completed"
   },
   {
-    "content": "Backend: routes/push.py (public-key, subscribe, unsubscribe, test) + mount in server.py",
+    "content": "Backend: routes/push.py + mount",
     "status": "completed"
   },
   {
-    "content": "Backend: services/reindex.py — continuous re-index + auto memory learning (continuous consumption)",
+    "content": "Backend: services/reindex.py continuous re-index + auto memory learning",
     "status": "completed"
   },
   {
-    "content": "Backend: services/skills/jobs_provider.py (LinkedIn/JSearch + mock) + jobs.py search/save + routes",
+    "content": "Backend: jobs_provider.py + jobs search/save + routes",
     "status": "completed"
   },
   {
-    "content": "Backend: wire scheduler -> shared notifier (push), reindex job, server startup vapid init",
+    "content": "Backend: scheduler wiring + vapid startup",
     "status": "completed"
   },
   {
-    "content": "Test backend (testing_agent): push, reindex/auto-learn, jobs search/fallback, clean-slate gating",
-    "status": "in_progress"
+    "content": "Test backend (testing_agent) + self-healing briefing fallback",
+    "status": "completed"
   },
   {
     "content": "Design: 'Entity' Kaelra Home redesign blueprint (design_agent)",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Frontend: public/sw.js + src/lib/push.js helper",

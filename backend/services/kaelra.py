@@ -57,6 +57,31 @@ def persona(profile: dict) -> str:
 
 
 # ----------------------------- Briefing -----------------------------
+def _fallback_briefing(profile: dict, context: dict) -> str:
+    """Deterministic warm greeting when the LLM is briefly unavailable.
+
+    Kaelra is 'self-repairing' here: she never leaves the user without a
+    present, personal greeting built from the real context she can see.
+    """
+    name = profile.get("call_me") or profile.get("name") or "there"
+    bits = [f"Hi {name}, I'm here and watching your day."]
+    cal = (context.get("calendar") or {})
+    events = cal.get("events") if isinstance(cal, dict) else None
+    if events:
+        ev = events[0]
+        when = f" at {ev.get('start')}" if ev.get("start") else ""
+        bits.append(f"Your next thing is {ev.get('title')}{when}.")
+    emails = (context.get("emails") or {})
+    important = emails.get("important") if isinstance(emails, dict) else None
+    if important:
+        bits.append(f"I'm watching {len(important)} email(s) that look important.")
+    pending = context.get("pending_actions") or []
+    if pending:
+        bits.append(f"I've prepared {len(pending)} thing(s) for your approval.")
+    bits.append("What would you like me to take care of first?")
+    return " ".join(bits)
+
+
 async def generate_briefing_text(profile: dict, context: dict, session_id: str) -> str:
     system = persona(profile) + (
         "\n\nGenerate a warm, spoken-style DAILY BRIEFING (4-7 sentences). "
@@ -67,7 +92,13 @@ async def generate_briefing_text(profile: dict, context: dict, session_id: str) 
         "Never invent facts not present in the context."
     )
     prompt = "Here is everything you know about today:\n\n" + json.dumps(_slim(context), indent=2)
-    return await complete(system=system, prompt=prompt, session_id=session_id, task=TaskType.BRIEFING)
+    try:
+        text = await complete(system=system, prompt=prompt, session_id=session_id, task=TaskType.BRIEFING)
+        if text and text.strip():
+            return text
+    except Exception:  # noqa: BLE001
+        pass
+    return _fallback_briefing(profile, context)
 
 
 async def propose_actions(profile: dict, context: dict, session_id: str) -> list[dict]:
