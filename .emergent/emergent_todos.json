@@ -20,19 +20,19 @@
     "status": "completed"
   },
   {
-    "content": "Full E2E test + verify signup/onboarding (false-positive cleared) + fix placeholder",
+    "content": "Full E2E test + verify signup/onboarding + fix placeholder",
     "status": "completed"
   },
   {
-    "content": "Deployment readiness check (deployment_agent)",
-    "status": "in_progress"
+    "content": "Deployment readiness check (deployment_agent) — PASS",
+    "status": "completed"
   },
   {
-    "content": "Wipe all non-demo accounts (clean-slate) for fresh user test",
-    "status": "pending"
+    "content": "Wipe all non-demo accounts (clean-slate) — only demo remains",
+    "status": "completed"
   },
   {
     "content": "Per-user cost & pricing analysis + final summary",
-    "status": "pending"
+    "status": "completed"
   }
 ]
