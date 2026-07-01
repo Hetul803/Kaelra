@@ -53,6 +53,25 @@ async def _save_message(user_id, session_id, role, content):
     return doc
 
 
+# Only spend a SECOND LLM call on action-extraction when the turn actually looks
+# actionable. Navigational / informational turns ("show me email", "what's my
+# day") skip it entirely — a big token saving with no loss of behaviour.
+import re as _re
+
+_ACTION_SIGNAL = _re.compile(
+    r"\b(draft|write|reply|respond|send|email|remind|reminder|schedule|resched"
+    r"|calendar|apply|application|book|follow[\s-]?up|prepare|prep|post|cancel"
+    r"|create|make|set (?:a|up)|add (?:a|to|an)?|organi[sz]e|summar[iy]|plan"
+    r"|put together|save (?:this|that|the|it)|attach)\b",
+    _re.IGNORECASE,
+)
+
+
+def _looks_actionable(user_msg: str, reply: str) -> bool:
+    blob = f"{user_msg}\n{reply}"
+    return bool(_ACTION_SIGNAL.search(blob))
+
+
 @router.post("/chat/stream")
 async def chat_stream(req: ChatRequest, user: dict = Depends(get_current_user)):
     db = get_db()
@@ -89,8 +108,9 @@ async def chat_stream(req: ChatRequest, user: dict = Depends(get_current_user)):
 
         created = []
         try:
-            proposed = await kaelra.actions_from_turn(profile, context, req.message, reply, f"chat-{session_id}")
-            created = await create_actions(user_id, proposed, origin="conversation")
+            if _looks_actionable(req.message, reply):
+                proposed = await kaelra.actions_from_turn(profile, context, req.message, reply, f"chat-{session_id}")
+                created = await create_actions(user_id, proposed, origin="conversation")
         except Exception:
             created = []
         yield f"data: {json.dumps({'type': 'actions', 'actions': created})}\n\n"

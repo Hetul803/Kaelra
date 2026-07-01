@@ -25,6 +25,9 @@ from routes import google as google_routes
 from routes import context as context_routes
 from routes import skills as skills_routes
 from routes import push as push_routes
+from routes import memory as memory_routes
+from routes import microsoft as microsoft_routes
+from routes import location as location_routes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -60,6 +63,9 @@ api_router.include_router(google_routes.router, tags=["google"])
 api_router.include_router(context_routes.router, tags=["context"])
 api_router.include_router(skills_routes.router, tags=["skills"])
 api_router.include_router(push_routes.router, tags=["push"])
+api_router.include_router(memory_routes.router, tags=["memory"])
+api_router.include_router(microsoft_routes.router, tags=["microsoft"])
+api_router.include_router(location_routes.router, tags=["location"])
 
 app.include_router(api_router)
 

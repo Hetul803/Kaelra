@@ -1,26 +1,34 @@
 [
   {
-    "content": "Fix double-speak (voice.js de-dupe + Home session-greeting guard)",
+    "content": "Wire Pass 3: App.js routes + global KaelraPresence; index.js SW; index.html manifest; AppShell Timeline nav",
     "status": "completed"
   },
   {
-    "content": "Differentiate Dashboard (Control Panel) from Home (remove duplicate chat/greeting)",
+    "content": "Build shared Entity command router (lib/kaelraCommand.js)",
     "status": "completed"
   },
   {
-    "content": "Home: news cards + speaker-first + 'show me ...' natural-language commands",
+    "content": "voice.js: free browser speakLocal + mic-collision events",
     "status": "completed"
   },
   {
-    "content": "Backend: add news to /api/feed",
+    "content": "KaelraPresence: default-on, command router, mic-collision pause/resume",
     "status": "completed"
   },
   {
-    "content": "Verify fixes via testing_agent (double-speak, dashboard differentiation, commands, news)",
+    "content": "ConnectedAccounts: Microsoft 365 card + multi-account Google list",
+    "status": "completed"
+  },
+  {
+    "content": "Memory: unified continuous-memory consolidation UI",
+    "status": "completed"
+  },
+  {
+    "content": "Backend cost: router.py Haiku (claude-haiku-4-5) for cheap tasks; chat.py gate actions_from_turn",
+    "status": "completed"
+  },
+  {
+    "content": "Test frontend + backend (testing agent), fix reported bugs",
     "status": "in_progress"
-  },
-  {
-    "content": "Clarify scope + gather credentials for mega-features (Outlook/MS, Founder analytics, Maps/location, native push, multi-account, wake-word)",
-    "status": "pending"
   }
 ]

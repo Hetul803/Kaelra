@@ -25,6 +25,11 @@ async def google_status(user: dict = Depends(get_current_user)):
     return await google_oauth.status(user["id"])
 
 
+@router.get("/oauth/google/accounts")
+async def google_accounts(user: dict = Depends(get_current_user)):
+    return {"accounts": await google_oauth.list_accounts(user["id"])}
+
+
 @router.get("/oauth/google/url")
 async def google_url(redirect_uri: str, user: dict = Depends(get_current_user)):
     if not google_configured():
@@ -46,6 +51,6 @@ async def google_callback(req: CallbackRequest, user: dict = Depends(get_current
 
 
 @router.post("/oauth/google/disconnect")
-async def google_disconnect(user: dict = Depends(get_current_user)):
-    await google_oauth.disconnect(user["id"])
+async def google_disconnect(email: str | None = None, user: dict = Depends(get_current_user)):
+    await google_oauth.disconnect(user["id"], email)
     return {"ok": True}

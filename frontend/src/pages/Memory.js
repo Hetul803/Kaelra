@@ -17,7 +17,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "../components/ui/alert-dialog";
-import { Brain, Plus, Star, Pencil, Trash2, Clock } from "lucide-react";
+import { Brain, Plus, Star, Pencil, Trash2, Clock, Sparkles, RefreshCw, Layers } from "lucide-react";
 
 const emptyForm = { category: "Personal facts", content: "", important: false, temporary: false };
 
@@ -29,6 +29,12 @@ export default function Memory() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null);
+  const [insights, setInsights] = useState(null);
+  const [consolidating, setConsolidating] = useState(false);
+
+  const loadInsights = useCallback(async () => {
+    try { const { data } = await api.get("/memory/insights"); setInsights(data); } catch (e) { /* ignore */ }
+  }, []);
 
   const load = useCallback(async (cat) => {
     setLoading(true);
@@ -40,6 +46,23 @@ export default function Memory() {
   }, []);
 
   useEffect(() => { load(filter); }, [filter, load]);
+  useEffect(() => { loadInsights(); }, [loadInsights]);
+
+  const runConsolidate = async () => {
+    setConsolidating(true);
+    try {
+      const { data } = await api.post("/memory/consolidate");
+      if (data.consolidated > 0) {
+        toast.success(`Kaelra wove ${data.processed} observations into ${data.consolidated} durable ${data.consolidated === 1 ? "memory" : "memories"}.`);
+      } else if (data.skipped === "nothing" || data.processed === 0) {
+        toast.message("Nothing new to weave in yet.");
+      } else {
+        toast.message("Kaelra reviewed her recent notes — nothing new to merge.");
+      }
+      await Promise.all([loadInsights(), load(filter)]);
+    } catch (e) { toast.error("Couldn't consolidate right now."); }
+    finally { setConsolidating(false); }
+  };
 
   const openAdd = () => { setEditing(null); setForm(emptyForm); setDialogOpen(true); };
   const openEdit = (m) => { setEditing(m); setForm({ category: m.category, content: m.content, important: m.important, temporary: m.temporary }); setDialogOpen(true); };
@@ -67,10 +90,46 @@ export default function Memory() {
         <div>
           <div className="kaelra-kicker">What Kaelra knows</div>
           <h1 className="font-heading text-2xl">Memory</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Everything here shapes how she helps you. You’re in control.</p>
+          <p className="mt-1 text-sm text-muted-foreground">One continuous memory that evolves as she learns. You’re always in control.</p>
         </div>
         <Button onClick={openAdd} className="gap-1.5" data-testid="memory-add-button"><Plus size={16} /> Add memory</Button>
       </div>
+
+      {/* Unified continuous memory + consolidation */}
+      <GlassCard className="rounded-2xl p-4" data-testid="memory-consolidation-panel">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-[hsl(var(--primary))]"><Layers size={20} /></span>
+            <div>
+              <div className="font-heading">One continuous memory</div>
+              <p className="mt-0.5 max-w-md text-sm text-muted-foreground">
+                Kaelra doesn’t keep separate boxes. Everything she observes flows into one evolving memory — fresh observations are woven into durable, non-redundant knowledge.
+              </p>
+            </div>
+          </div>
+          <Button onClick={runConsolidate} disabled={consolidating} className="shrink-0 gap-1.5" data-testid="memory-consolidate-button">
+            <RefreshCw size={15} className={consolidating ? "animate-spin" : ""} /> {consolidating ? "Weaving…" : "Consolidate now"}
+          </Button>
+        </div>
+        {insights && (
+          <div className="mt-4 grid grid-cols-3 gap-2" data-testid="memory-insights">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+              <div className="font-heading text-xl" data-testid="memory-insight-total">{insights.total}</div>
+              <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">Total</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+              <div className="flex items-center justify-center gap-1 font-heading text-xl text-[hsl(var(--primary))]" data-testid="memory-insight-durable">
+                <Sparkles size={15} /> {insights.consolidated}
+              </div>
+              <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">Durable</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+              <div className={`font-heading text-xl ${insights.pending_consolidation > 0 ? "text-[hsl(var(--accent))]" : ""}`} data-testid="memory-insight-pending">{insights.pending_consolidation}</div>
+              <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">To weave in</div>
+            </div>
+          </div>
+        )}
+      </GlassCard>
 
       <div className="flex flex-wrap gap-2" data-testid="memory-category-filter">
         {["all", ...categories].map((c) => (

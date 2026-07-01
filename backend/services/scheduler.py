@@ -177,6 +177,15 @@ async def _reindex_tick():
         logger.warning("reindex tick failed: %s", e)
 
 
+async def _consolidate_tick():
+    """Periodically fold high-churn learned memories into durable memory."""
+    from services.memory_consolidation import consolidate_all
+    try:
+        await consolidate_all()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("consolidation tick failed: %s", e)
+
+
 def start_scheduler():
     global _scheduler
     if _scheduler:
@@ -186,8 +195,10 @@ def start_scheduler():
                        max_instances=1, coalesce=True)
     _scheduler.add_job(_reindex_tick, "interval", minutes=3, id="kaelra_reindex_tick",
                        max_instances=1, coalesce=True)
+    _scheduler.add_job(_consolidate_tick, "interval", hours=6, id="kaelra_consolidate_tick",
+                       max_instances=1, coalesce=True)
     _scheduler.start()
-    logger.info("Kaelra routine + reindex scheduler started")
+    logger.info("Kaelra routine + reindex + consolidation scheduler started")
 
 
 def shutdown_scheduler():

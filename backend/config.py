@@ -35,6 +35,22 @@ def google_configured() -> bool:
     return bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
 
 
+# --- Microsoft (Outlook / Microsoft 365) OAuth (optional; mock/idle until set) ---
+MICROSOFT_CLIENT_ID = os.environ.get("MICROSOFT_CLIENT_ID", "").strip()
+MICROSOFT_CLIENT_SECRET = os.environ.get("MICROSOFT_CLIENT_SECRET", "").strip()
+MICROSOFT_TENANT = os.environ.get("MICROSOFT_TENANT", "common").strip()
+MICROSOFT_SCOPES = [
+    "openid", "email", "profile", "offline_access",
+    "https://graph.microsoft.com/User.Read",
+    "https://graph.microsoft.com/Mail.Read",
+    "https://graph.microsoft.com/Calendars.Read",
+]
+
+
+def microsoft_configured() -> bool:
+    return bool(MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET)
+
+
 # --- ElevenLabs voice (optional; browser Web Speech fallback when absent) ---
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "").strip()
 ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL").strip()  # "Sarah" warm female

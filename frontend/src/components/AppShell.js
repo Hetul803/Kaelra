@@ -3,11 +3,12 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid, MessageCircle, ListChecks, Brain, FolderOpen,
   Bell, Plug, MonitorSmartphone, Settings as SettingsIcon,
-  Menu, LogOut, ChevronRight, Briefcase, GraduationCap, Rocket, Home, Sparkles,
+  Menu, LogOut, ChevronRight, Briefcase, GraduationCap, Rocket, Home, Sparkles, Route,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { KaelraOrb } from "./KaelraOrb";
+import { KaelraPresence } from "./KaelraPresence";
 import { CommandBar } from "./CommandBar";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Button } from "./ui/button";
@@ -17,6 +18,7 @@ const PRIMARY_NAV = [
   { to: "/queue", label: "Action Queue", icon: ListChecks, badgeKey: "pending" },
   { to: "/memory", label: "Memory", icon: Brain },
   { to: "/files", label: "Files", icon: FolderOpen },
+  { to: "/timeline", label: "Timeline", icon: Route },
 ];
 const ALL_SKILLS = {
   jobs: { to: "/jobs", label: "Jobs & Career", icon: Briefcase },
@@ -24,7 +26,7 @@ const ALL_SKILLS = {
   founder: { to: "/founder", label: "Founder Workspace", icon: Rocket },
   home: { to: "/home", label: "Smart Home", icon: Home },
 };
-const SKILL_ORDER = ["jobs", "class", "founder", "home"];
+const SKILL_ORDER = ["jobs", "class", "home"];
 const CONTROL_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { to: "/routines", label: "Routines", icon: Bell },
@@ -242,6 +244,9 @@ export function AppShell({ children, title }) {
           </button>
         </SheetContent>
       </Sheet>
+
+      {/* Global always-present Kaelra (wake-word + opt-in location) */}
+      <KaelraPresence />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { api } from "../lib/api";
 import { useVoice } from "../lib/voice";
+import { interpretCommand, executeCommand } from "../lib/kaelraCommand";
 import { useAuth } from "../context/AuthContext";
 import { pushSupported, getPushState, enablePush } from "../lib/push";
 import { KaelraOrb } from "../components/KaelraOrb";
@@ -36,20 +37,8 @@ const FEED_TABS = [
   { value: "file", label: "Files" },
 ];
 
-// Natural-language routing so the user can just tell Kaelra what to show.
-const INTENT_ROUTES = [
-  { keys: ["job", "career", "recruiter"], path: "/jobs" },
-  { keys: ["class", "school", "assignment", "course"], path: "/class" },
-  { keys: ["founder", "startup", "analytics"], path: "/founder" },
-  { keys: ["smart home", "home device", "lights", "thermostat"], path: "/home" },
-  { keys: ["memory", "remember", "learned", "what you know"], path: "/memory" },
-  { keys: ["queue", "approval", "pending action", "to approve"], path: "/queue" },
-  { keys: ["routine", "schedule a"], path: "/routines" },
-  { keys: ["dashboard", "control panel", "overview"], path: "/dashboard" },
-  { keys: ["setting", "privacy"], path: "/settings" },
-  { keys: ["connected account", "connect google", "connect"], path: "/accounts" },
-  { keys: ["device"], path: "/devices" },
-];
+// Natural-language routing lives in ../lib/kaelraCommand (shared with the
+// global KaelraPresence wake-word), so Kaelra behaves the same everywhere.
 
 function relTime(iso) {
   if (!iso) return "";
@@ -128,28 +117,10 @@ export default function Kaelra() {
     try { await api.put("/settings", { voice_enabled: !next }); refreshProfile && refreshProfile(); } catch (e) { /* ignore */ }
   };
 
-  // Try to satisfy a "show me ..." style request locally before sending to chat.
-  const handleIntent = (raw) => {
-    const t = (raw || "").toLowerCase();
-    const isShow = /\b(show|open|pull up|go to|take me to|bring up|see|view|display|let me see)\b/.test(t);
-    if (!isShow) return false;
-    const cardKinds = [
-      { keys: ["email", "inbox", "mail", "message"], kind: "email", fallback: "/dashboard" },
-      { keys: ["calendar", "schedule", "event", "meeting", "agenda"], kind: "event", fallback: "/dashboard" },
-      { keys: ["news", "headline"], kind: "news", fallback: "/dashboard" },
-      { keys: ["file", "document", "doc", "attachment"], kind: "file", fallback: "/files" },
-    ];
-    for (const c of cardKinds) {
-      if (c.keys.some((k) => t.includes(k))) {
-        const it = (feed?.items || []).find((x) => x.kind === c.kind);
-        if (it) { voice.stopSpeaking(); setSelected(it); return true; }
-        navigate(c.fallback);
-        return true;
-      }
-    }
-    for (const r of INTENT_ROUTES) {
-      if (r.keys.some((k) => t.includes(k))) { navigate(r.path); return true; }
-    }
+  // Open a Home feed card of a given kind (used by the Entity command router).
+  const openCard = (kind) => {
+    const it = (feed?.items || []).find((x) => x.kind === kind);
+    if (it) { voice.stopSpeaking(); setSelected(it); return true; }
     return false;
   };
 
@@ -158,7 +129,17 @@ export default function Kaelra() {
     if (!message) return;
     voice.stopSpeaking();
     setInput("");
-    if (handleIntent(message)) return;
+    // Try to operate the app locally first (free — no LLM / premium voice).
+    const handled = executeCommand({
+      cmd: interpretCommand(message),
+      navigate,
+      speak: (s) => { if (!muted) voice.speakLocal(s); },
+      openCard,
+      closeCard: () => setSelected(null),
+      stopSpeaking: () => voice.stopSpeaking(),
+    });
+    if (handled) return;
+    // Real reasoning -> full conversation.
     navigate("/talk", { state: { initialMessage: message } });
   };
 

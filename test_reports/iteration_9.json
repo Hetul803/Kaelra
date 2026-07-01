@@ -1,0 +1,49 @@
+{
+  "summary": "Completed comprehensive testing of Kaelra Pass 3 features. All backend APIs and frontend components working correctly. Entity command router successfully handles local navigation commands without LLM calls. Microsoft OAuth correctly shows as not configured (EXPECTED). Google OAuth configured. Location timeline and memory consolidation working perfectly.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: POST /api/chat/stream with non-actionable message returns done event",
+    "Backend: POST /api/chat/stream with actionable message yields actions event without error",
+    "Backend: GET /api/memory/insights returns {total, learned, consolidated, pending_consolidation}",
+    "Backend: POST /api/memory/consolidate returns 200 with dict {consolidated, processed, skipped}",
+    "Backend: GET /api/oauth/microsoft/status returns configured=false, connected=false, accounts=[] (EXPECTED)",
+    "Backend: GET /api/oauth/microsoft/url returns 400 (EXPECTED - not configured)",
+    "Backend: GET /api/oauth/google/status returns configured=true with accounts array",
+    "Backend: GET /api/oauth/google/accounts returns {accounts: []} structure",
+    "Backend: POST /api/location/ping with {lat,lng} returns place/visits dict",
+    "Backend: GET /api/location/timeline returns {places, frequent, today_points, today, total_places}",
+    "Backend: Cheaper Anthropic model (claude-haiku-4-5-20251001) works for action extraction without 500 error",
+    "Frontend: Login via demo button (data-testid=auth-demo-login-button) works correctly",
+    "Frontend: /timeline route renders with data-testid=timeline-root and timeline-toggle-button",
+    "Frontend: /accounts shows google-connect-card and microsoft-connect-card",
+    "Frontend: Clicking microsoft-connect-button shows toast 'Microsoft is not configured' (EXPECTED)",
+    "Frontend: /memory shows memory-consolidation-panel with memory-insights",
+    "Frontend: memory-consolidate-button works without error",
+    "Frontend: Global wake-word toggle (kaelra-wakeword-toggle) present on all pages (home, timeline, accounts, memory)",
+    "Frontend: Entity command router - 'show me my email' opens email card locally WITHOUT navigating to /talk",
+    "Frontend: Entity command router - email card displays as modal overlay on home page"
+  ],
+  "test_report_links": [
+    "/app/backend_test_pass3.py",
+    "/app/.screenshots/pass3_memory_page.png",
+    "/app/.screenshots/entity_command_router.png"
+  ],
+  "action_item_for_main_agent": "",
+  "updated_files": [
+    "/app/backend_test_pass3.py"
+  ],
+  "success_percentage": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (all features working)"
+  },
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

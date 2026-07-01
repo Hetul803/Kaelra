@@ -13,6 +13,8 @@ from .gmail import GmailConnector
 from .drive import DriveConnector
 from .maps import MapsConnector
 from .news import NewsConnector
+from .outlook import OutlookMailConnector, OutlookCalendarConnector
+from .icloud import ICloudCalendarConnector
 
 # Registry of all known connectors keyed by provider id.
 CONNECTORS: dict[str, BaseConnector] = {
@@ -23,6 +25,9 @@ CONNECTORS: dict[str, BaseConnector] = {
         DriveConnector(),
         MapsConnector(),
         NewsConnector(),
+        OutlookMailConnector(),
+        OutlookCalendarConnector(),
+        ICloudCalendarConnector(),
     ]
 }
 
@@ -31,6 +36,9 @@ CONNECTOR_CATALOG = [
     {"provider": "google_calendar", "name": "Google Calendar", "icon": "calendar", "category": "Schedule", "default_state": "connected"},
     {"provider": "gmail", "name": "Gmail", "icon": "mail", "category": "Email", "default_state": "connected"},
     {"provider": "google_drive", "name": "Google Drive", "icon": "folder", "category": "Files", "default_state": "connected"},
+    {"provider": "outlook_mail", "name": "Outlook Mail", "icon": "mail", "category": "Email", "default_state": "not_connected"},
+    {"provider": "outlook_calendar", "name": "Outlook Calendar", "icon": "calendar", "category": "Schedule", "default_state": "not_connected"},
+    {"provider": "icloud_calendar", "name": "iCloud Calendar", "icon": "cloud", "category": "Schedule", "default_state": "not_connected"},
     {"provider": "maps", "name": "Maps / Commute", "icon": "map-pin", "category": "Location", "default_state": "connected"},
     {"provider": "news", "name": "News Briefing", "icon": "newspaper", "category": "Interests", "default_state": "connected"},
     {"provider": "notifications", "name": "Notifications", "icon": "bell", "category": "System", "default_state": "connected"},

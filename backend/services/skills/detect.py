@@ -11,7 +11,6 @@ from utils import is_demo_user
 SKILL_DEFS = {
     "jobs":    {"label": "Jobs & Career",   "route": "/jobs",    "icon": "briefcase"},
     "class":   {"label": "Class & School",  "route": "/class",   "icon": "graduation"},
-    "founder": {"label": "Founder Workspace", "route": "/founder", "icon": "rocket"},
     "home":    {"label": "Smart Home",      "route": "/home",    "icon": "home"},
 }
 
@@ -54,5 +53,8 @@ async def relevant_skills(user_id: str) -> list[dict]:
 
     if await db.home_devices.count_documents({"user_id": user_id}) > 0:
         out["home"] = "Smart-home devices connected"
+
+    # Founder skill is kept in the codebase but hidden from the UI for now.
+    out.pop("founder", None)
 
     return [{"key": k, **SKILL_DEFS[k], "reason": reason} for k, reason in out.items()]

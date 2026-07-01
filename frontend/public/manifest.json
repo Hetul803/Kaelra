@@ -1,0 +1,15 @@
+{
+  "name": "Kaelra — Personal AI Operator",
+  "short_name": "Kaelra",
+  "description": "Your personal AI operator. Connect your accounts once — she handles the rest.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "/kaelra-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
