@@ -201,7 +201,7 @@
 
 ---
 
-## Phase 9 — Entity Wiring + Cost-Aware Kaelra (IN PROGRESS)
+## Phase 9 — Entity Wiring + Cost-Aware Kaelra (✅ COMPLETE — verified by testing_agent iteration_9, 100%)
 **North star:** Kaelra is one always-present Entity. The user just talks; she navigates, controls the app, shows things, and asks "what's next" — with minimal LLM/voice spend and one unified, continuous memory.
 
 ### 9.1 — Wire "Pass 3" into the app root
